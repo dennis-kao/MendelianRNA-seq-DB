@@ -22,7 +22,7 @@ def makeUniqSpliceDict(SpliceFile):
 
 def printSplices(SpliceFile):
 	d = makeUniqSpliceDict(SpliceFile) 
-#	print "Gene\tChrom\tStart\tEnd\tNTimesSeen\tNSamplesSeen\tSamples:NSeen"
+#	print "Gene\tGene_type\tChrom\tStart\tEnd\tNTimesSeen\tNSamplesSeen\tSamples:NSeen"
 	for key in d:
 		inf = key.split(":")
 		Gene = inf[0]

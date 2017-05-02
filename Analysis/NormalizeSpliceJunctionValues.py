@@ -10,7 +10,7 @@ def make_annotated_junction_set(f,chrom_col,start_col,stop_col):
 	'''From an annotations file, extracts all all annotated junctions with 1 bp flank on either side. 
 		These are junctions as in 1:1221-1345. So these are annotated splice junctions'''
 	s=set()
-	with f  as inp:
+	with f as inp:
 		for junction in inp:
 			fields = junction.strip().split("\t") 
 			chrom = fields[chrom_col]
