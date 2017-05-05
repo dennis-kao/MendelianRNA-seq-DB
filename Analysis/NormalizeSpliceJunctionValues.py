@@ -1,4 +1,4 @@
-#!/bin/bash/py
+#!/hpf/largeprojects/ccmbio/naumenko/tools/bcbio/anaconda/bin/python
 import sys
 import argparse
 import gzip
@@ -25,11 +25,9 @@ def make_annotated_junction_set(f,chrom_col,start_col,stop_col):
 			s.update(st,stadd1,stadd2)
 	return s
 
-
 def get_flank(pos):
 	pos = int(pos)-1
 	return [pos-1,pos,pos+1]
-
 
 def sort_floats(pair_list,type="float"):
 	'''Sorting SampleName:Nread by read count to place the highest at the end and colour t'''
@@ -68,7 +66,6 @@ def get_unannotated_junctions(splicefile,annotated,chrom_col,start_col,stop_col)
 			else: 
 				print spliceline.strip()
 
-
 def get_annotated_counts(splicefile,annotated):
 	''' '''
 	splice_dict = {}
@@ -102,8 +99,6 @@ def get_annotated_counts(splicefile,annotated):
 						if int(pair_ntimes) > int(current_count_sample):
 							current_counts[pair_sample] = int(pair_ntimes)
 	return splice_dict
-
-
 
 def normalize_counts(splicefile,annotated_counts): 
 	with open(splicefile) as inp:
@@ -157,8 +152,6 @@ def normalize_counts(splicefile,annotated_counts):
 			 	line_to_print = "\t".join([gene,gene_type,full_junction,ntimes,nsamp,",".join(samptimes_sorted),tag,"-"])
 				print line_to_print
 
-			
-
 def main(args):
 	if args.gzipped: 
 		f = gzip.open(args.transcript_model)
@@ -170,12 +163,6 @@ def main(args):
 		normalize_counts(args.splice_file,annotated_counts)
 	if args.getunannotated:
 		get_unannotated_junctions(args.splice_file,s,args.chrom_col,args.start_col,args.stop_col)
-
-
-
-
-
-
 
 if __name__=="__main__":
 	parser = argparse.ArgumentParser(description = '''Get unannotated junctions from splice file''')

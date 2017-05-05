@@ -2,6 +2,8 @@
 
 # what is transriptFile - processed from Gencode ?
 
+# some change
+
 beryl_home=/home/naumenko/tools/MendelianRNA-seq
 
 #transcriptFile=${beryl_home}/NMD_genes.list
