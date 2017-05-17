@@ -19,17 +19,18 @@ def make_annotated_junction_set(f,chrom_col,start_col,stop_col):
 			chrom = chrom.strip("chr")
 			start_flanks = get_flank(start)
 			stop_flanks = get_flank(stop)
-			st = tuple(("%s:%s-%s"%(chrom,start_flanks[ind],stop_flanks[ind])) for ind in range(0,3))
-			stadd1 = "%s:%s-%s"%(chrom,start_flanks[0],stop_flanks[2])				#Need to think about these flanks
-			stadd2 = "%s:%s-%s"%(chrom,start_flanks[2],stop_flanks[0])
-			s.update(st,stadd1,stadd2)
+			st = tuple(("%s:%s-%s"%(chrom,start_flanks[ind],stop_flanks[ind])) for ind in range(0,3))			#range(0,3) shifts the junction while maintaining the same distance between start and stop
+			stadd1 = "%s:%s-%s"%(chrom,start_flanks[0],stop_flanks[2])				#start = originalStart - 2, stop = originalStop
+			stadd2 = "%s:%s-%s"%(chrom,start_flanks[2],stop_flanks[0])				#start = originalStart, stop = originalStop - 2
+			s.update(st,stadd1,stadd2)												#s contains (start-2,stop-2), (start-1,stop-1), (start,stop), (start-2,stop), (start,stop-2)
 	return s
 
 def get_flank(pos):
-	pos = int(pos)-1
+	pos = int(pos)-1 		#always -1? why not omit this line and just return [pos-1,pos,pos+1] ?
 	return [pos-1,pos,pos+1]
 
-def sort_floats(pair_list,type="float"):
+#	this function is only here so that the program prints out ordered columns
+def sort_floats(pair_list,type="float"):	#pair_list is an array of strings e.x. ['PATIENT1:12', 'PATIENT2:25']
 	'''Sorting SampleName:Nread by read count to place the highest at the end and colour t'''
  	count_dict = {}
  	sorted_floats = []
@@ -46,7 +47,7 @@ def sort_floats(pair_list,type="float"):
 			count_dict[n_reads] = [sample]
 		else:
 			count_dict[n_reads].append(sample)
-	for counts in sorted(count_dict.keys()):
+	for counts in sorted(count_dict.keys()):			#goes over the remaining keys which were stored in count_dict
 		for elem in count_dict[counts]:
 				sorted_floats.append("%s:%s"%(counts,elem))
 	return sorted_floats
@@ -60,27 +61,29 @@ def get_unannotated_junctions(splicefile,annotated,chrom_col,start_col,stop_col)
 			stop = fields[4]
 			chrom = chrom.strip("chr")
 			#gene,chrom,start,stop,ntimes,nsamp,samptimes = spliceline.strip().split("\t")
-			q = "%s:%s-%s"%(chrom,start,stop)
+			q = "%s:%s-%s"%(chrom,start,stop)ntimes
 			if q in annotated: 
 				continue
 			else: 
 				print spliceline.strip()
 
 def get_annotated_counts(splicefile,annotated):
-	''' '''
-	splice_dict = {}
+	''' '''					#	pos = ("chromosome:position")
+	splice_dict = {}		#	("chromosome:position") : sample : times_seen_in_sample
 	with open(splicefile) as inp:  
 		for spliceline in inp: 
-			if "Chrom" in spliceline : 
+			if "Chrom" in spliceline :		#	skip the first line of the input file
 				continue
 			gene,gene_type,chrom,start,stop,ntimes,nsamp,samptimes = spliceline.strip().split("\t")[0:8]
 			q = "%s:%s-%s"%(chrom,start,stop)
-			#If splice junction is not annotated
+
 			if q not in annotated: 
 				continue
+
 			'''If junction is annotated, note the number of reads that align to that exon-intron junction in all samples that carry it
 			If your splice junction is annotated and the junction is ~ 2:100-250 Besse:10, Beryl 20 then the dictionary you create is:
-			{'2:200':{'Beryl':10,'Besse':10}  ,  2:100: {'Beryl':10,'Besse':10}}'''
+			{'2:250' :{'Beryl':20,'Besse':10}  ,  2:100: {'Beryl':20,'Besse':10}}'''
+			
 			for pos in [start,stop]:
 				pos = "%s:%s"%(chrom,pos) 
 				if pos not in splice_dict:
@@ -96,7 +99,7 @@ def get_annotated_counts(splicefile,annotated):
 						pair_sample = pair.split(":")[0]
 						pair_ntimes = pair.split(":")[1]
 						current_count_sample = current_counts.get(pair_sample,0)
-						if int(pair_ntimes) > int(current_count_sample):
+						if int(pair_ntimes) > int(current_count_sample):			#Take the biggest value
 							current_counts[pair_sample] = int(pair_ntimes)
 	return splice_dict
 
@@ -109,7 +112,7 @@ def normalize_counts(splicefile,annotated_counts):
 			gene,gene_type,chrom,start,stop,ntimes,nsamp,samptimes = spliceline.strip().split("\t")  
 			#For printing later 
 			full_junction = "%s:%s-%s"%(chrom,start,stop)
-			samptimes_sorted = sort_floats(samptimes.split(","),type="int")
+			samptimes_sorted = sort_floats(samptimes.split(","),type="int") 
 			base_start = "%s:%s"%(chrom,start) 
 			base_stop= "%s:%s"%(chrom,stop)
 			annotated_start = annotated_counts.get(base_start)
