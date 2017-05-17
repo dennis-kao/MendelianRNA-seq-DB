@@ -17,3 +17,7 @@ Some ready list are in data folder.
 
 4. Filter junction covered with >10 reads and found in 1 sample.
 ```cat All.kidney.glomerular.genes.list.splicing.txt | awk '{if (($6>10) && ($7==1)) print $0}' > novel_junctions.txt```
+
+5. Add normalized read count values to the file produced from step 3.
+```qsub ~/tools/MendelianRNA-seq/Analysis/rnaseq.normalize_splice_junction_values.pbs -v splice_file=All.kidney.glomerular.genes.list.splicing.txt,transcript_model=gencode.comprehensive.splice.junctions.txt,action=--normalize,$outputFileName=output.txt```
+
