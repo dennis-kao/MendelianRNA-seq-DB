@@ -61,7 +61,7 @@ def get_unannotated_junctions(splicefile,annotated,chrom_col,start_col,stop_col)
 			stop = fields[4]
 			chrom = chrom.strip("chr")
 			#gene,chrom,start,stop,ntimes,nsamp,samptimes = spliceline.strip().split("\t")
-			q = "%s:%s-%s"%(chrom,start,stop)ntimes
+			q = "%s:%s-%s"%(chrom,start,stop)
 			if q in annotated: 
 				continue
 			else: 

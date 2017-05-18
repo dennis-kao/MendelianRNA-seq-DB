@@ -25,4 +25,4 @@ then
 	outputFileName=$4
 fi
 
-echo ~/tools/MendelianRNA-seq/Analysis/NormalizeSpliceJunctionValues.py -splice_file $splice_file -transcript_model $transcript_model $action > $outputFileName
+~/tools/MendelianRNA-seq/Analysis/NormalizeSpliceJunctionValues.py -splice_file $splice_file -transcript_model $transcript_model $action > $outputFileName
