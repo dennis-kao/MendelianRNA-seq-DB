@@ -53,8 +53,8 @@ echo "1. Normalizing read counts in $input"
 ~/tools/MendelianRNA-seq/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$input --normalize > $outputFilePath/$output 
 echo "Output: $output"
 
-echo "2. Filtering for minimum read count, minimum normalized read count and novel junctions"
-cat $output | grep $sample | awk '{ if (\$5 == 1 && \$4 >= $minread ) print \$0}'
+echo "2. Filtering for minimum read count, minimum normalized read count and novel junctions" 
+cat $output | grep $sample | awk '{ if (\$5 == 1 && \$4 >= $minread ) print \$0}' > $outputFilePath/novel_$output 
 echo "Output: novel_$output"
 
 echo "DONE - NormalizeAndDiscoverNovelJunctions.sh ran successfully"
