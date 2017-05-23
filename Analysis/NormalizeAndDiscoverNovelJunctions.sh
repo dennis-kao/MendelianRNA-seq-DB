@@ -47,9 +47,9 @@ fi
 inputFileName=`basename $input`
 outputFilePath=`dirname $input`
 
-step1Output=norm_$inputFileName
-step2Output=novel_$sample_norm_$inputFileName
-step3Output=threshold$minnormread_novel_$sample_norm_$inputFileName
+step1Output="norm_$inputFileName"
+step2Output="novel_$sample_norm_$inputFileName"
+step3Output="threshold$minnormread_novel_$sample_norm_$inputFileName"
 
 echo -e "========	RUNNING NormalizeAndDiscoverNovelJunctions.sh	========\n"
 
