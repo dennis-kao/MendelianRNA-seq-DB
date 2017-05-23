@@ -13,7 +13,7 @@
 # 		1) normalized_input.txt: input file with an additional column for normalized read counts
 # 		2) novel_normalized_input.txt: file from 1) that has been filtered for a minimum read count, minimum normalized read count and only has junctions specific to sample
 
-beryl_home=~/tools/MendelianRNA-seq/
+beryl_home=~/tools/MendelianRNA-seq
 baseDir=`pwd`
 
 #	User parameters
@@ -54,8 +54,8 @@ echo "1. Normalizing read counts in $input"
 echo "Output: $output"
 
 echo "2. Filtering for minimum read count, minimum normalized read count and novel junctions" 
-cat $output | grep $sample | awk '{ if (\$5 == 1 && \$4 >= $minread ) print \$0}' > $outputFilePath/novel_$output 
+echo "cat $outputFilePath/$output | grep $sample | awk '{ if (\$5 == 1 && \$4 >= $minread ) print \$0}'" > $outputFilePath/novel_$output 
 echo "Output: novel_$output"
 
-echo "DONE - NormalizeAndDiscoverNovelJunctions.sh ran successfully"
+echo "DONE - NormalizeAndDiscoverNovelawJunctions.sh ran successfully"
 echo "Output files can be found in: $outputFilePath"
