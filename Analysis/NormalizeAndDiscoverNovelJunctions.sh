@@ -47,20 +47,24 @@ fi
 inputFileName=`basename $input`
 outputFilePath=`dirname $input`
 
+step1Output=norm_$inputFileName
+step2Output=novel_$sample_norm_$inputFileName
+step3Output=threshold$minnormread_novel_$sample_norm_$inputFileName
+
 echo -e "========	RUNNING NormalizeAndDiscoverNovelJunctions.sh	========\n"
 
 #	Actual computation
 echo "1. Normalizing read counts in $input"
-$beryl_home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$input --normalize > $outputFilePath/norm_$inputFileName 
-echo -e "Output: norm_$inputFileName\n"
+$beryl_home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$input --normalize > $outputFilePath/step1Output 
+echo -e "Output: step1Output\n"
 
 echo "2. Filtering for minimum read count and novel junctions" 
-cat $outputFilePath/norm_$inputFileName | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" > $outputFilePath/$sample_norm_$inputFileName
-echo -e "Output: $sample_norm_$output\n"
+cat $outputFilePath/$step1Output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" > $outputFilePath/$step2Output
+echo -e "Output: $step2Output\n"
 
 echo "3. Filtering out for neither annotated junctions and a minimum normalize read count"
-cat $outputFilePath/$sample_norm_$output | grep -v "Neither annotated" | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{ if (\$8 > \$minnormread) print \$0 }" > $outputFilePath/threshold$minnormread_$sample_norm_$output
-echo -e "Output: threshold$minnormread_$sample_norm_$output\n"
+cat $outputFilePath/$step2Output | grep -v "Neither annotated" | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{ if (\$8 > \$minnormread) print \$0 }" > $outputFilePath/step3Output
+echo -e "Output: $step3Output\n"
 
 echo "DONE - NormalizeAndDiscoverNovelawJunctions.sh ran successfully"
 echo "Output files can be found in: $outputFilePath"
