@@ -13,7 +13,7 @@
 # 		1) normalized_input.txt: input file with an additional column for normalized read counts
 # 		2) novel_normalized_input.txt: file from 1) that has been filtered for a minimum read count, minimum normalized read count and only has junctions specific to sample
 
-beryl_home=~/Github/MendelianRNA-seq/
+beryl_home=~/tools/MendelianRNA-seq/
 baseDir=`pwd`
 
 #	User parameters
