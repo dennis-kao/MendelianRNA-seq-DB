@@ -54,7 +54,7 @@ echo "1. Normalizing read counts in $input"
 echo "Output: $output"
 
 echo "2. Filtering for minimum read count, minimum normalized read count and novel junctions" 
-echo "cat $outputFilePath/$output | grep $sample | awk '{ if (\$5 == 1 && \$4 >= $minread ) print \$0}'" > $outputFilePath/novel_$output 
+cat $outputFilePath/$output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" > $outputFilePath/novel_$output
 echo "Output: novel_$output"
 
 echo "DONE - NormalizeAndDiscoverNovelawJunctions.sh ran successfully"
