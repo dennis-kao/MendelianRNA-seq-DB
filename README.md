@@ -19,8 +19,8 @@ Some ready list are in data folder.
 ```input=All.kidney.glomerular.genes.list.splicing.txt sample=sampleName /MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelSpliceJunctions.sh```
 
 Additional parameters can be specified:
-a)minread, the minimum number of reads a site needs to have (default=10)
-b)threshold, the minimum normalized read count a site needs to have (default=0.5)
+a) minread, the minimum number of reads a site needs to have (default=10)
+b) threshold, the minimum normalized read count a site needs to have (default=0.5)
 
 Script will produce the following files in the same directory as the input file:
 a) norm_All.kidney.glomerular.genes.list.splicing.txt - the input file with a column for normalized read counts
