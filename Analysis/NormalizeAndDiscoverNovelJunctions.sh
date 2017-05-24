@@ -51,10 +51,6 @@ step1Output="norm_"$inputFileName
 step2Output="novel_"$sample"_norm_"$inputFileName
 step3Output="threshold"$minnormread"_novel_"$sample"_norm_"$inputFileName
 
-echo $step1Output
-echo $step2Output
-echo $step3Output
-
 echo -e "\n========	RUNNING NormalizeAndDiscoverNovelJunctions.sh	========\n"
 
 #	Actual computation
@@ -67,7 +63,7 @@ cat $outputFilePath/$step1Output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= 
 echo -e "Output: $step2Output\n"
 
 echo "3. Filtering out for neither annotated junctions and a minimum normalize read count"
-cat $outputFilePath/$step2Output | grep -v "Neither annotated" | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{ if (\$8 > \$minnormread) print \$0 }" > $outputFilePath/$step3Output
+cat $outputFilePath/$step2Output | grep -v "Neither annotated" | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{ if (\$9 > \$minnormread) print \$0 }" > $outputFilePath/$step3Output
 echo -e "Output: $step3Output\n"
 
 echo "DONE - NormalizeAndDiscoverNovelawJunctions.sh has finished running"
