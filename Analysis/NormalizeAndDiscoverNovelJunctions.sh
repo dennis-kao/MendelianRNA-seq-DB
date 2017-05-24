@@ -64,8 +64,8 @@ echo "2. Filtering for minimum read count and novel junctions"
 cat $outputFilePath/$step1Output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" > $outputFilePath/$step2Output
 echo -e "Output: $step2Output\n"
 
-echo "3. Filtering out for neither annotated junctions and a minimum normalize read count"
-cat $outputFilePath/$step2Output | grep -v "Neither annotated" | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{if (\$9 > $threshold) print \$0}" > $outputFilePath/$step3Output
+echo "3. Filtering out for minimum normalize read count"
+cat $outputFilePath/$step2Output | sed 's/:10-1-M//' | sed 's/:10-1-M//' | awk "{if (\$9 > $threshold || \$7 == "Neither") print \$0}" > $outputFilePath/$step3Output
 echo -e "Output: $step3Output\n"
 
 echo "DONE - NormalizeAndDiscoverNovelawJunctions.sh has finished running"
