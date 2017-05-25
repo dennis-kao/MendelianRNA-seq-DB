@@ -18,14 +18,15 @@
 	```qsub ~/tools/MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v gene_list=kidney.glomerular.genes.list,bam_list=bam.list,sample=sampleName```
 
 	Mandatory parameters:
-	1. gene_list - path to file produced in step 2
-	2. bam_list - path to a text file containing the names of all bam files used in the analysis, each on a seperate line
+	1. gene_list, path to file produced in step 2
+	2. bam_list, path to a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
-		e.g.
+		```
 		control1.bam
 		control2.bam
 		control3.bam
 		findNovel.bam
+		```
 
 	3. sample - the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
