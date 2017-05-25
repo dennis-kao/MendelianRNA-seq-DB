@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#PBS -l walltime=10:00:00,nodes=1:ppn=1
+#PBS -joe .
+#PBS -d .
+#PBS -l vmem=10g,mem=10g
+
+beryl_home=~/tools/MendelianRNA-seq
+
+name=`basename $gene_list | sed 's/gencode.v19.genes.filtered.group//'`
+sjdOutput="All."$name".splicing.txt"
+
+#	Optional parameters
+if [ -z "$minread" ];
+then
+		minread=10
+fi
+
+if [ -z "$threshold" ];
+then
+		threshold=0.5
+fi
+
+if [ -z "$transcript_model" ];
+then
+		transcript_model="$beryl_home/gencode.comprehensive.splice.junctions.txt"
+fi
+
+~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
+input=$sdjOutput sample=$sample minread=$minread threshold=$threshold transcript_model=$transcript_model ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh 

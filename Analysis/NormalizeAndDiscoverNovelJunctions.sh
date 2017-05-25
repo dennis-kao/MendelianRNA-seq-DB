@@ -31,17 +31,17 @@ fi
 
 #	Optional parameters
 if [ -z "$minread" ];
-	then
+then
 		minread=10
 fi
 
 if [ -z "$threshold" ];
-	then
+then
 		threshold=0.5
 fi
 
 if [ -z "$transcript_model" ];
-	then
+then
 		transcript_model="$beryl_home/gencode.comprehensive.splice.junctions.txt"
 fi
 
