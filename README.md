@@ -28,7 +28,7 @@
 		findNovel.bam
 		```
 
-	3. sample - the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
+	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
 	Additional parameters can be specified:
 	1. minread, the minimum number of reads a site needs to have (default=10)
