@@ -20,13 +20,16 @@ baseDir=`pwd`
 #	Mandatory parameters
 if [ -z "$input" ];
 	then
-		echo "ERROR - Specify an input file"
+		echo -e "ERROR - Specify the path to an input file with the format:\n" 
+		echo -e "Gene	Type	Chrom	Start	End	NTimesSeen	NSamplesSeen	Samples:NSeen\n"
+		echo -e "For example: AL627309.1	BLAH	1	136903	136953	1	1	G34487:1"
 		exit 1
 fi
 
 if [ -z "$sample" ];
 	then
-		echo "ERROR - Specify the sample name used in the input file"
+		echo -e "ERROR - Specify the name of the bam file you want to discover novel junctions in\n"
+		echo -e "If your file is patient1.bam, then write sample=patient1"
 		exit 2
 fi
 
@@ -49,28 +52,18 @@ fi
 inputFileName=`basename $input`
 outputFilePath=`dirname $input`
 
-step1Output="norm_"$inputFileName
-step2Output="novel_"$sample"_norm_"$inputFileName
+# step1Output="norm_"$inputFileName
+# step2Output="novel_"$sample"_norm_"$inputFileName
 step3Output="threshold"$threshold"_novel_"$sample"_norm_"$inputFileName
 
 #	Actual computation
 echo -e "\n========	RUNNING NormalizeAndDiscoverNovelJunctions.sh	========\n"
 
-echo "1. Normalizing read counts in $input"
-$beryl_home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$input --normalize > $outputFilePath/$step1Output 
-echo -e "Output: $step1Output\n"
-
-echo "2. Filtering for minimum read count and novel junctions" 
-cat $outputFilePath/$step1Output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" > $outputFilePath/$step2Output
-echo -e "Output: $step2Output\n"
-
-echo "3. Filtering out for minimum normalize read count"
-cat $outputFilePath/$step2Output | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$9 > $threshold || \$7 == \"Neither\") print \$0}" > $outputFilePath/$step3Output
+$beryl_home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$input --normalize | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" | grep -v '*' > $outputFilePath/$step3Output
 echo -e "Output: $step3Output\n"
 
-finalNumberOfSpliceSites=`wc -l $step3Output`
-echo -e "Number of splice sites: $finalNumberOfSpliceSites\n"
+# finalNumberOfSpliceSites=`wc -l $step3Output`
+# echo -e "Number of splice sites: $finalNumberOfSpliceSites\n"
 
-
-echo "DONE - NormalizeAndDiscoverNovelJunctions.sh has finished running"
-echo "Output files can be found in: $outputFilePath/"
+echo -e "DONE - NormalizeAndDiscoverNovelJunctions.sh has finished running\n"
+echo "Output: $outputFilePath/$step3Output"
