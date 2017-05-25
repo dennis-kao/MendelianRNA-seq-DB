@@ -31,7 +31,7 @@
 
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
-	Additional parameters can be specified:
+	Optional parameters:
 	1. minread, the minimum number of reads a site needs to have (default=10)
 	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
 	
