@@ -20,7 +20,7 @@
 
 	Mandatory parameters:
 	1. gene_list, path to file produced in step 2
-	2. bam_list, path to a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+	2. bam_list, text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
 		```
 		control1.bam
@@ -28,7 +28,8 @@
 		control3.bam
 		findNovel.bam
 		```
-
+	bam files and bai files should be in the current working directory
+	
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
 	Optional parameters:
