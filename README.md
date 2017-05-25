@@ -28,7 +28,7 @@
 		control3.bam
 		findNovel.bam
 		```
-	bam files and bai files should be in the current working directory
+		bam files and bai files should be in the current working directory
 	
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
