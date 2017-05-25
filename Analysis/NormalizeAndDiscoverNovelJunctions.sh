@@ -65,11 +65,12 @@ cat $outputFilePath/$step1Output | grep $sample | awk "{ if (\$5 == 1 && \$4 >= 
 echo -e "Output: $step2Output\n"
 
 echo "3. Filtering out for minimum normalize read count"
-cat $outputFilePath/$step2Output | sed 's/:$sample//' | sed 's/:$sample//' | awk "{if (\$9 > $threshold || \$7 == \"Neither\") print \$0}" > $outputFilePath/$step3Output
+cat $outputFilePath/$step2Output | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$9 > $threshold || \$7 == \"Neither\") print \$0}" > $outputFilePath/$step3Output
 echo -e "Output: $step3Output\n"
 
 finalNumberOfSpliceSites=`wc -l $step3Output`
 echo -e "Number of splice sites: $finalNumberOfSpliceSites\n"
+
 
 echo "DONE - NormalizeAndDiscoverNovelJunctions.sh has finished running"
 echo "Output files can be found in: $outputFilePath/"
