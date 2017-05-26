@@ -2,6 +2,8 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
+## Steps
+
 1. Run bcbio RNA-seq pipeline to get bam files
 
 2. Create a list of genes of interest (muscular or kidney), in the format:
@@ -33,9 +35,17 @@
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
 	Optional parameters:
-	1. minread, the minimum number of reads a site needs to have (default=10)
+	1. minread, the minimum number of reads a junction needs to have (default=10)
 	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
 	3. transcript_model, a text file containing a list of known canonical splice sites. Absolute paths only. (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
 	
+## Output
 
+The script outputs a single file with the name:
+
+threshold**0.XX**_novel_**sampleName**_norm_**All.kidney.glomerular.genes.list**.splicing.txt
+
+where 0.XX is the threshold value, sampName is the sample you want to discover novel junctions in, and All.kidney.glomerular.genes.list is the name of the input file.
+
+The file contains text information in the format:
 
