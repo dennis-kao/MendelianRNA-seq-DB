@@ -21,7 +21,7 @@ then
 		threshold=0.5
 fi
 
-transcript_model_arg='transcript_model='$transcript_model
+transcript_model_arg="transcript_model="$transcript_model
 
 if [ -z "$transcript_model" ];
 then
