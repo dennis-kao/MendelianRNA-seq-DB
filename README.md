@@ -1,6 +1,6 @@
 # MendelianRNA-seq
 
-#### Modification of Beryl Cummings scripts for discovering damaging splicing events through RNA-seq
+#### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
 1. Run bcbio RNA-seq pipeline to get bam files
 
