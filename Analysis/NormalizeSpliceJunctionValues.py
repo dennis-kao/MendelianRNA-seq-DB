@@ -169,7 +169,7 @@ def main(args):
 
 if __name__=="__main__":
 	parser = argparse.ArgumentParser(description = '''Get unannotated junctions from splice file''')
-	parser.add_argument('-transcript_model',help="Transcript model of canonical splicing, e.g. gencode v19. Default is ~/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt",action='store',default = "~/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt")
+	parser.add_argument('-transcript_model',help="Transcript model of canonical splicing, e.g. gencode v19. Default is set to /home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt",action='store',default = "/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt")
 	parser.add_argument('-splice_file',help='Splice junction file to filter')
 	parser.add_argument('-gzipped', help='Add if sjout file is gzipped',action='store_true')
 	parser.add_argument('-chrom_col',help='Chromosome column',type=int,default=0)
