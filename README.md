@@ -73,3 +73,6 @@ MYH2	17:10426949-10533504	98	Neither annotated	-
 CAV3	3:8819222-8883028	27	Both annotated	1.0
 TPM2	9:35683226-35684252	20	Neither annotated	-
 ```
+## Footnotes
+
+The transcript_model file _gencode.comprehensive.splice.junctions.txt_ is based off of gencode v19.
