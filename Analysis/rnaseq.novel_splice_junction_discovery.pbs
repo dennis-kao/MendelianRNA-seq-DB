@@ -29,4 +29,4 @@ then
 fi
 
 ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
-input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh 
+~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg 
