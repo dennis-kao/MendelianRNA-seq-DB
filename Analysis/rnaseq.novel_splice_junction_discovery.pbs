@@ -21,10 +21,12 @@ then
 		threshold=0.5
 fi
 
+transcript_model_arg='-transcript_model='$transcript_model
+
 if [ -z "$transcript_model" ];
 then
-		transcript_model="$beryl_home/gencode.comprehensive.splice.junctions.txt"
+		transcript_model_arg=''
 fi
 
 ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
-input=$sjdOutput sample=$sample minread=$minread threshold=$threshold transcript_model=$transcript_model ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh 
+input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh 
