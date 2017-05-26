@@ -25,8 +25,8 @@ transcript_model_arg='transcript_model='$transcript_model
 
 if [ -z "$transcript_model" ];
 then
-		transcript_model_arg=''
+		transcript_model_arg=""
 fi
 
 ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
-~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg 
+input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
