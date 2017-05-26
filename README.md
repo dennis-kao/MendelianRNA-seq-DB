@@ -14,7 +14,7 @@
 
 	```cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> kidney.glomerular.genes.list```
 
-3. Run the novel splice junction discovery script on the file produced in step 2 
+3. Run the novel splice junction discovery script
 
 	```qsub ~/tools/MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v gene_list=kidney.glomerular.genes.list,bam_list=bam.list,sample=sampleName```
 
