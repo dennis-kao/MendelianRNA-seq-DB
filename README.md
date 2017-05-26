@@ -49,7 +49,7 @@ where 0.XX is the threshold value, sampName is the sample you want to discover n
 
 The file contains text information in the format:
 
-```GENE	CHROM:START-STOP	READ_COUNT SITES	ANNOTATED	NORM_READ_COUNT```
+```GENE	CHROM:START-STOP	READ_COUNT SITES_ANNOTATED	NORM_READ_COUNT```
 
 Here is a sample output:
 
