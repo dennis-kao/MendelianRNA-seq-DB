@@ -57,6 +57,6 @@ outputFilePath=`dirname $input`
 #	Actual code
 output="threshold"$threshold"_novel_"$sample"_norm_"$inputFileName
 
-$beryl_home/Analysis/NormalizeSpliceJunctionValues.py $transcript_model_arg -splice_file=$input --normalize | grep $sample | grep -v '*' | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" | cut -f 1,2,3,4,7,8,9 > $outputFilePath/$output
+$beryl_home/Analysis/NormalizeSpliceJunctionValues.py $transcript_model_arg -splice_file=$input --normalize | grep $sample | grep -v '*' | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" | cut -f 1,3,4,7,8,9 > $outputFilePath/$output
 
 echo "NormalizeAndDiscoverNovelJunctions.sh finished running on $(date)"
