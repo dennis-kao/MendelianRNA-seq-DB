@@ -36,8 +36,8 @@
 
 	Optional parameters:
 	1. minread, the minimum number of reads a junction needs to have (default=10)
-	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
-	3. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice sites (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
+	2. threshold, the minimum normalized read count a junction needs to have (default=0.5)
+	3. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice junctions (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
 	
 ## Output
 
