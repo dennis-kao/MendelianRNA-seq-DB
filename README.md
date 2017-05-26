@@ -28,14 +28,14 @@
 		control3.bam
 		findNovel.bam
 		```
-		bam files and bai files should be in the current working directory
+		NOTE: bam files and bai files should be in the current working directory
 	
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
 
 	Optional parameters:
 	1. minread, the minimum number of reads a site needs to have (default=10)
 	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
-	3. transcript_model, a text file containing a list of known canonical splice sites. Refer to MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt for an example.
+	3. transcript_model, a text file containing a list of known canonical splice sites. Absolute paths only. (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
 	
 
 
