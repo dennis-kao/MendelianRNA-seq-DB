@@ -22,7 +22,7 @@
 
 	Mandatory parameters:
 	1. gene_list, path to file produced in step 2
-	2. bam_list, text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+	2. bam_list, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
 		```
 		control1.bam
@@ -36,8 +36,8 @@
 
 	Optional parameters:
 	1. minread, the minimum number of reads a junction needs to have (default=10)
-	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
-	3. transcript_model, a text file containing a list of known canonical splice sites. Absolute paths only. (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
+	2. threshold, the minimum normalized read count a junction needs to have (default=0.5)
+	3. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice junctions (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
 	
 ## Output
 
@@ -49,27 +49,30 @@ where 0.XX is the threshold value, sampName is the sample you want to discover n
 
 The file contains text information in the format:
 
-```GENE ENSG STRAND CHROM START STOP NEXONS```
+```GENE	CHROM:START-STOP	READ_COUNT SITES_ANNOTATED	NORM_READ_COUNT```
 
 Here is a sample output:
 
 ```
-PLEKHG5	NEXONS	1:6556900-6557380	11	One annotated	1.222
-CNTN1	NEXONS	12:41303907-41312441	14	Both annotated	1.0
-CNTN1	NEXONS	12:41330707-41331372	50	Both annotated	1.0
-CNTN1	NEXONS	12:41327680-41330583	39	Both annotated	1.0
-CNTN1	NEXONS	12:41302295-41303875	46	Both annotated	1.0
-TRPV4	NEXONS	12:110222242-110224515	11	Both annotated	1.0
-CFL2	NEXONS	14:35181674-35182098	10	Neither annotated	-
-PMM2	NEXONS	16:8909579-8930060	10	Neither annotated	-
-PMM2	NEXONS	16:8909579-8917904	17	Neither annotated	-
-MYH2	NEXONS	17:10441098-10546261	10	Neither annotated	-
-MYH2	NEXONS	17:10426966-10533715	37	Neither annotated	-
-MYH2	NEXONS	17:10426947-10533478	42	Neither annotated	-
-MYH2	NEXONS	17:10426959-10533502	57	Neither annotated	-
-MYH2	NEXONS	17:10426961-10533718	10	Neither annotated	-
-MYH2	NEXONS	17:10426961-10533480	13	Neither annotated	-
-MYH2	NEXONS	17:10426949-10533504	98	Neither annotated	-
-CAV3	NEXONS	3:8819222-8883028	27	Both annotated	1.0
-TPM2	NEXONS	9:35683226-35684252	20	Neither annotated	-
+PLEKHG5	1:6556900-6557380	11	One annotated	1.222
+CNTN1	12:41303907-41312441	14	Both annotated	1.0
+CNTN1	12:41330707-41331372	50	Both annotated	1.0
+CNTN1	12:41327680-41330583	39	Both annotated	1.0
+CNTN1	12:41302295-41303875	46	Both annotated	1.0
+TRPV4	12:110222242-110224515	11	Both annotated	1.0
+CFL2	14:35181674-35182098	10	Neither annotated	-
+PMM2	16:8909579-8930060	10	Neither annotated	-
+PMM2	16:8909579-8917904	17	Neither annotated	-
+MYH2	17:10441098-10546261	10	Neither annotated	-
+MYH2	17:10426966-10533715	37	Neither annotated	-
+MYH2	17:10426947-10533478	42	Neither annotated	-
+MYH2	17:10426959-10533502	57	Neither annotated	-
+MYH2	17:10426961-10533718	10	Neither annotated	-
+MYH2	17:10426961-10533480	13	Neither annotated	-
+MYH2	17:10426949-10533504	98	Neither annotated	-
+CAV3	3:8819222-8883028	27	Both annotated	1.0
+TPM2	9:35683226-35684252	20	Neither annotated	-
 ```
+## Footnotes
+
+The transcript_model file _gencode.comprehensive.splice.junctions.txt_ is based off of gencode v19.
