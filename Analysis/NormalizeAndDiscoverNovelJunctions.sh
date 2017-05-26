@@ -13,21 +13,23 @@
 
 beryl_home=~/tools/MendelianRNA-seq
 
-echo "Running NormalizeAndDiscoverNovelJunctions.sh"
+echo "NormalizeAndDiscoverNovelJunctions.sh started running on $date"
 
 #	Mandatory parameters
 if [ -z "$input" ];
 	then
-		echo -e "ERROR - Specify the path to an input file with the format:\n" 
+		echo "ERROR - Specify the path to an input file with the format:" 
 		echo "Gene	Type	Chrom	Start	End	NTimesSeen	NSamplesSeen	Samples:NSeen"
-		echo -e "AL627309.1	BLAH	1	136903	136953	1	1	G34487:1\n"
+		echo "AL627309.1	BLAH	1	136903	136953	1	1	G34487:1"
+		echo "NormalizeAndDiscoverNovelJunctions.sh finished running on $date"
 		exit 1
 fi
 
 if [ -z "$sample" ];
 	then
 		echo "ERROR - Specify the name of the bam file you want to discover novel junctions in"
-		echo -e "If your file is patient1.bam, then write sample=patient1"
+		echo "If your file is patient1.bam, then write sample=patient1"
+		echo "NormalizeAndDiscoverNovelJunctions.sh finished running on $date"
 		exit 2
 fi
 
@@ -42,7 +44,7 @@ then
 		threshold=0.5
 fi
 
-transcript_model_arg='transcript_model='$transcript_model
+transcript_model_arg='-transcript_model='$transcript_model
 
 if [ -z "$transcript_model" ];
 then
@@ -57,4 +59,4 @@ output="threshold"$threshold"_novel_"$sample"_norm_"$inputFileName
 
 $beryl_home/Analysis/NormalizeSpliceJunctionValues.py $transcript_model_arg -splice_file=$input --normalize | grep $sample | grep -v '*' | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" | cut -f 1,2,3,4,7,8,9 > $outputFilePath/$output
 
-echo "NormalizeAndDiscoverNovelJunctions.sh has finished running"
+echo "NormalizeAndDiscoverNovelJunctions.sh finished running on $date"
