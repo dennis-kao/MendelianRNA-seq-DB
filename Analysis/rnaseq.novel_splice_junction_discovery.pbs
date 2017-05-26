@@ -21,12 +21,12 @@ then
 		threshold=0.5
 fi
 
-transcript_model_arg="transcript_model="$transcript_model
+~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
 
+#	Default to transcript model (gencode v19) or not?
 if [ -z "$transcript_model" ];
 then
-		transcript_model_arg=""
+		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
+else
+		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold transcript_model=$transcript_model ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
 fi
-
-~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
-input=$sjdOutput sample=$sample minread=$minread threshold=$threshold $transcript_model_arg ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
