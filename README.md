@@ -35,6 +35,7 @@
 	Optional parameters:
 	1. minread, the minimum number of reads a site needs to have (default=10)
 	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
+	3. transcript_model, a text file containing a list of known canonical splice sites. Refer to MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt for an example.
 	
 
 
