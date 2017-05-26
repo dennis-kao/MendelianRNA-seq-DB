@@ -43,7 +43,7 @@
 
 The script outputs a single file with the name:
 
-threshold**0.XX**_novel_**sampleName**_norm_**All.kidney.glomerular.genes.list**.splicing.txt
+threshold**0.XX**\_novel\_**sampleName**\_norm\_**All.kidney.glomerular.genes.list**.splicing.txt
 
 where 0.XX is the threshold value, sampName is the sample you want to discover novel junctions in, and All.kidney.glomerular.genes.list is the name of the input file.
 
