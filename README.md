@@ -22,7 +22,7 @@
 
 	Mandatory parameters:
 	1. gene_list, path to file produced in step 2
-	2. bam_list, text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+	2. bam_list, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
 		```
 		control1.bam
@@ -37,7 +37,7 @@
 	Optional parameters:
 	1. minread, the minimum number of reads a junction needs to have (default=10)
 	2. threshold, the minimum normalized read count a site needs to have (default=0.5)
-	3. transcript_model, a text file containing a list of known canonical splice sites. Absolute paths only. (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
+	3. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice sites (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt)
 	
 ## Output
 
