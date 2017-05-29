@@ -99,7 +99,7 @@ def get_annotated_counts(splicefile,annotated):
 						pair_sample = pair.split(":")[0]
 						pair_ntimes = pair.split(":")[1]
 						current_count_sample = current_counts.get(pair_sample,0)
-						if int(pair_ntimes) > int(current_count_sample):			#Take the biggest value
+						if int(pair_ntimes) > int(current_count_sample):			#if you encounter the same position, check if it is the same sample, if it is and the read is bigger, change the read count
 							current_counts[pair_sample] = int(pair_ntimes)
 	return splice_dict
 
@@ -115,14 +115,14 @@ def normalize_counts(splicefile,annotated_counts):
 			samptimes_sorted = sort_floats(samptimes.split(","),type="int") 
 			base_start = "%s:%s"%(chrom,start) 
 			base_stop= "%s:%s"%(chrom,stop)
-			annotated_start = annotated_counts.get(base_start)
+			annotated_start = annotated_counts.get(base_start)	#get the collection of sample:RC, sample2:RC
 			annotated_stop = annotated_counts.get(base_stop)
 			if annotated_start and  annotated_stop:													#Canonical splicing and exon skipping
 				tag = "Both annotated"
 				for pair  in samptimes.split(","):
 					pair_sample = pair.split(":")[0]
 					pair_ntimes = int(pair.split(":")[1])
-					annotated_start_sample = annotated_start.get(pair_sample,0)
+					annotated_start_sample = annotated_start.get(pair_sample,0)	#get read count specific to the sample
 					annotated_stop_sample = annotated_stop.get(pair_sample,0)
 					denominator  = max(annotated_start_sample,annotated_stop_sample)
 					try:
