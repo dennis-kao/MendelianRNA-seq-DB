@@ -3,7 +3,7 @@
 #	May 29th, 2017
 #	dennis.kao@sickkids.ca
 #
-#	Usage: input=/path/to/input.bed ./bedToList.sh
+#	Usage: input=/path/to/gene_list.bed ./bedToList.sh
 #
 #	Input: a .bed file containing information about the location of genes in this format:
 #	"CHROMOSOME	START	STOP	NAME"
