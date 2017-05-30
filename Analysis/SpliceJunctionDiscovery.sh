@@ -31,23 +31,25 @@ do
     gene=`echo $line | cut -f1`
     gene_type=`echo $line | cut -f7`
     base=$baseDir/$gene
-    pos=$chrom":"$start"-"$st
+    pos=$chrom":"$start"-"$stop
     echo 'processing' $gene
     for i in `cat $bamList`
     do
-	sample=`echo $i | awk -F"/" '{print $NF}' | cut -d "." -f 1`
-	#$6 ~ /N/ - splitted read - CIGAR string
-	#$5=60 mapping quality threshold is very high, something is wrong with our alignment, we have 255 mostly 
-	#int($2) < 256 - not a secondary alignment
-	#$4 - mapping start, $6 - CIGAR
-	#parsing CIGAR MATCH GAP
-	#soft clipping
-	#output: gene gene_type(number of exons) sample chr junction_start junction_end exonic_part intronic_part ?
-	
-	# only get split reads, only get high quality reads, print mapping start, space, then CIGAR string, print everything before and not including 'N', 
-    # replace all instances of 'M' with a space, remove soft clipping, print resulting string - $4 can be empty or can be the remaining part of the CIGAR string
-	samtools view ${i} ${pos} | awk '($6 ~ /N/)' | awk 'int($2)< 256' | awk -v sta=$start -v sto=$stop '$4>sta&&$4<sto {print $4,$6}' | \
-	cut -d "N" -f 1 | tr 'M' ' ' |  sed -r 's/[0-9]+S//' | awk -v s=$sample -v ge=$gene -v t=$gene_type -v chr=$chrom '{print ge,t,s,chr,$1+$2-1,$1+$2+$3,$2,$3,$4}' >> ${base}.splicing.txt
+    sample=`echo $i | awk -F"/" '{print $NF}' | cut -d "." -f 1`
+    #$6 ~ /N/ - splitted read - CIGAR string
+    #$5=60 mapping quality threshold is very high, something is wrong with our alignment, we have 255 mostly 
+    #int($2) < 256 - not a secondary alignment
+    #$4 - mapping start, $6 - CIGAR
+    #parsing CIGAR MATCH GAP
+    #soft clipping
+    #output: gene gene_type(number of exons) sample chr junction_start junction_end exonic_part intronic_part ?
+    
+
+    # only get split reads, no secondary reads, print mapping start, space, then CIGAR string, print everything before and not including 'N', 
+    # replace all instances of 'M' with a space, outright remove soft clipping information if its there, print resulting string - $4 can be empty or $3 is CIGAR remnant and $4 is 
+    
+    samtools view ${i} ${pos} | awk '($6 ~ /N/)' | awk 'int($2)< 256' | awk -v sta=$start -v sto=$stop '$4>sta&&$4<sto {print $4,$6}' | \
+    cut -d "N" -f 1 | tr 'M' ' ' |  sed -r 's/[0-9]+S//' | awk -v s=$sample -v ge=$gene -v t=$gene_type -v chr=$chrom '{print ge,t,s,chr,$1+$2-1,$1+$2+$3,$2,$3,$4}' >> ${base}.splicing.txt
     done
     echo $gene 'is complete'
     ~/work/tools/bcbio/anaconda/bin/python ${beryl_home}/Analysis/SpliceJunctionSummary.py <  ${base}.splicing.txt >> All.${groupname}.splicing.txt
