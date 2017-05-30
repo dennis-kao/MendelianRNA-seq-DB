@@ -5,6 +5,7 @@ def makeUniqSpliceDict(SpliceFile):
 	d = {}
 	for iLine in SpliceFile:
 		elems = iLine.strip().split()
+		#	Note: the last column is not used at all. CIGAR strings are included when they are seen.
 		try:
 			gene, gene_type, sample, chrom, spliceStart, spliceEnd, matchedExon, intronLength = elems
 			uniqSplice = "%s:%s:%s:%s-%s"%(gene, gene_type,chrom, spliceStart,spliceEnd)	
