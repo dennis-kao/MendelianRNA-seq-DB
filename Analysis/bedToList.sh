@@ -3,6 +3,8 @@
 #	May 29th, 2017
 #	dennis.kao@sickkids.ca
 #
+#	Usage: input=/path/to/gene_list.bed ./bedToList.sh
+#
 #	Input: a .bed file containing information about the location of genes in this format:
 #	"CHROMOSOME	START	STOP	NAME"
 #	Output: a .list file to be used as the gene_list parameter in SpliceJunctionDiscovery.sh
@@ -10,7 +12,7 @@
 
 if [ -z "$input" ];
 	then
-		echo "ERROR - Please specify an input file, ex. input=/path/to/input.txt ./bedToList.sh" 
+		echo "ERROR - Please specify an input file" 
 		exit 1
 fi
 
