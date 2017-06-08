@@ -37,9 +37,9 @@
 
 	For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
-		```
+		
 		#PBS -l walltime=10:00:00,nodes=1:ppn=10
-		```
+		
 	
 	Optional parameters:
 	1. minread, the minimum number of reads a junction needs to have (default=10)
