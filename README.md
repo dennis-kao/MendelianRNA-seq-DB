@@ -1,4 +1,4 @@
-# MendelianRNA-seq
+﻿# MendelianRNA-seq
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
@@ -18,11 +18,11 @@
 
 3. Run the [novel splice junction discovery script](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/Analysis/rnaseq.novel_splice_junction_discovery.pbs)
 
-	```qsub ~/tools/MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v gene_list=kidney.glomerular.genes.list,bam_list=bam.list,sample=sampleName```
+	```qsub ~/tools/MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=kidney.glomerular.genes.list,bamList=bamlist.list,sample=sampleName,processes=10```
 
 	Mandatory parameters:
-	1. gene_list, path to file produced in step 2
-	2. bam_list, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+	1. transcriptFile, path to file produced in step 2
+	2. bamList, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
 		```
 		control1.bam
@@ -33,7 +33,14 @@
 		NOTE: bam files and bai files should be in the current working directory
 	
 	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
+	4. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
 
+	For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
+
+		```
+		#PBS -l walltime=10:00:00,nodes=1:ppn=10
+		```
+	
 	Optional parameters:
 	1. minread, the minimum number of reads a junction needs to have (default=10)
 	2. threshold, the minimum normalized read count a junction needs to have (default=0.5)

@@ -10,14 +10,14 @@
 #	Output: a .list file to be used as the gene_list parameter in SpliceJunctionDiscovery.sh
 #
 
-if [ -z "$input" ];
+if [ -z "$1" ];
 	then
 		echo "ERROR - Please specify an input file" 
 		exit 1
 fi
 
-output=$input".list"
+output=$1".list"
 
-echo "Input file: "$input
-cat $input | awk '{print $4"\t"$4"\t""+""\t"$1"\t"$2"\t"$3"\t""FILLER"}' > $output
+echo "Input file: "$1
+cat $1 | awk '{print $4"\t"$4"\t""+""\t"$1"\t"$2"\t"$3"\t""FILLER"}' > $output
 echo "Output file: "$output

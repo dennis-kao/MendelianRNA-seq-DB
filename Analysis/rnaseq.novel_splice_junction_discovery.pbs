@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#PBS -l walltime=10:00:00,nodes=1:ppn=1
+#PBS -l walltime=10:00:00,nodes=1:ppn=10
 #PBS -joe .
 #PBS -d .
 #PBS -l vmem=10g,mem=10g
 
 beryl_home=~/tools/MendelianRNA-seq
 
-name=`basename $gene_list | sed 's/gencode.v19.genes.filtered.group//'`
-sjdOutput="All."$name".splicing.txt"
+name=`basename $gene_list`
+sjdOutput="All."$name".splicing.list"
 
 #	Optional parameters
 if [ -z "$minread" ];
@@ -21,12 +21,23 @@ then
 		threshold=0.5
 fi
 
-~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.sh $gene_list $bam_list
+if [ -z "$processes" ];
+then
+		processes=10
+fi
 
-#	Default to transcript model (gencode v19) or not?
-if [ -z "$transcript_model" ];
+if [ -z "$bamList" ];
+then
+		bamList='bamlist.list'
+fi
+
+module load python/2.7.11
+~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcript_model -bamList=$bamList -processes=$processes
+
+#	Default to transcript model (gencode v19) for normalization or not?
+if [ -z "$transcriptFile" ];
 then
 		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
 else
-		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold transcript_model=$transcript_model ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
+		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold transcriptFile=$transcriptFile ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
 fi
