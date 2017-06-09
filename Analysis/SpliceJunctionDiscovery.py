@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import sys
 import os
 import errno
@@ -168,21 +166,14 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 if __name__=="__main__":
 
+	print 'SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+
 	parser = argparse.ArgumentParser(description = 'Discover splice junctions from a list of bam files')
 	parser.add_argument('-transcriptFile',help="Transcript model of canonical splicing, e.g. gencode v19. Default is set to /home/dennis.kao/largeWork/protein-coding-genes.list",action='store',default = "/home/dennis.kao/largeWork/protein-coding-genes.list")
 	parser.add_argument('-bamList',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line',default='bamlist.list')
 	parser.add_argument('-processes',help='number of processes to run multiple instances of: "samtools view", default=10',default=10)
 	args=parser.parse_args()
 
-	if not os.path.isfile(args.transcriptFile):
-		print 'transcriptFile: ' + str(args.transcriptFile) + ' does not exist!'
-		exit (1)
-
-	if not os.path.isfile(args.bamList):
-		print 'bamList: ' + str(args.bamList) + ' does not exist!'
-		exit (2)
-
-	print 'Started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
 	print 'Working in directory' + str(os.getcwd())
 	print 'Transcript file is ' + str(args.transcriptFile)
 	print 'Identifying splice junction is ' + str(args.bamList)
@@ -190,6 +181,9 @@ if __name__=="__main__":
 	processGenesInParallel(args.transcriptFile, args.bamList, args.processes)
 	
 	transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
-	run("cat *.txt > All." + transcriptFile + ".splicing.list") #concatenate all text files generated from processGenesInParallel()
+	output= "All." + transcriptFile + ".splicing.list"
 
-	print 'Finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+	run("cat *.txt > " + output) #concatenate all text files generated from processGenesInParallel()
+
+	print 'Output file is: ' + output
+	print 'SpliceJunctionDiscover.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")

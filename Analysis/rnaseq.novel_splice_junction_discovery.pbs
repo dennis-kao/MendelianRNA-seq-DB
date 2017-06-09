@@ -5,15 +5,30 @@
 #PBS -d .
 #PBS -l vmem=10g,mem=10g
 
-beryl_home=~/tools/MendelianRNA-seq
+if [ -z "$transcriptFile" ];
+then
+		echo "ERROR - Specify a path to a transcriptFile with the format:"
+		echo "Gene	Type	Chrom	Start	End	NTimesSeen	NSamplesSeen	Samples:NSeen"
+		echo "AL627309.1	BLAH	1	136903	136953	1	1	G34487:1"
+		exit 1
+fi
+
+if [ -z "$sample" ];
+then
+		echo "ERROR - Specify the name of the bam file you want to discover junctions specific to with the bam extension"
+		echo "E.x. findNovel.bam would be sample=findNovel"
+		exit 1
+fi
+
+home=~/tools/MendelianRNA-seq
 
 name=`basename $transcriptFile`
 sjdOutput="All."$name".splicing.list"
 
 #	Optional parameters
-if [ -z "$minread" ];
+if [ -z "$minRead" ];
 then
-		minread=10
+		minRead=10
 fi
 
 if [ -z "$threshold" ];
@@ -31,13 +46,11 @@ then
 		bamList='bamlist.list'
 fi
 
+normOutput="norm"$sjdOutput
+filteredOutput="threshold"$threshold"_novel_"$sample"_norm_"$sjdOutput
+
 module load python/2.7.11
 python ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
-
-#	Default to transcript model (gencode v19) for normalization or not?
-if [ -z "$transcriptFile" ];
-then
-		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
-else
-		input=$sjdOutput sample=$sample minread=$minread threshold=$threshold transcriptFile=$transcriptFile ~/tools/MendelianRNA-seq/Analysis/NormalizeAndDiscoverNovelJunctions.sh
-fi
+$home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcriptFile -splice_file=$sjdOutput --normalize > $normOutput
+python ~/tools/MendelianRNA-seq/Analysis/FilterSpliceJunctions.py -file=$normOutput -sample=$sample -minRead=$minRead -threshold=$threshold > $filteredOutput
+rm $normOutput
