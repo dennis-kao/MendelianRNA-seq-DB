@@ -2,10 +2,10 @@ import sys
 import os
 import argparse
 
-def filter(file, sampleName, minReadCount, minNormReadCount):
+def filter(file, sampleName, minReadCount, threshold):
 
 	minReadCount = int(minReadCount)
-	minNormReadCount = int(minNormReadCount)
+	threshold = int(threshold)
 
 	with open(file) as f:
 		for line in f:
@@ -24,7 +24,7 @@ def filter(file, sampleName, minReadCount, minNormReadCount):
 
 			normReadCount = int(tag.split(':')[0]) # tag = normReadCount:sample
 
-			if normReadCount < minNormReadCount: # normalization filtration
+			if normReadCount < threshold: # normalization filtration
 				continue
 
 			print line
@@ -37,13 +37,13 @@ if __name__=="__main__":
 	parser.add_argument('-file',help="The path to the file produced by NormalizeSpliceJunctionValues.py")
 	parser.add_argument('-sample',help="The name of the bam file you want to discover novel junctions in without the \".bam\" extension")
 	parser.add_argument('-minRead',help="The minimum read count a junction needs to have to be considered, default=10", default=10)
-	parser.add_argument('-minNormRead',help="The minimum normalized read count a junction needs to have to be considered, default=0.5", default=0.5)
+	parser.add_argument('-threshold',help="The minimum normalized read count a junction needs to have to be considered, default=0.5", default=0.5)
 	args=parser.parse_args()
 
 	# print 'Working in directory' + str(os.getcwd())
 	# print 'Splice file is ' + str(args.transcriptFile)
 
-	filter(args.file, args.sample, args.minRead, args.minNormRead)
+	filter(args.file, args.sample, args.minRead, args.threshold)
 
 	# input = str(args.file).rsplit('/')[-1]
 	# output = 'threshold' + str(args.normRead) + '_novel_' + sample + '_norm_' + input
