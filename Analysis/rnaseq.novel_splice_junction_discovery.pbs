@@ -51,6 +51,13 @@ filteredOutput="threshold"$threshold"_novel_"$sample"_norm_"$sjdOutput
 
 module load python/2.7.11
 python ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
-$home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcriptFile -splice_file=$sjdOutput --normalize > $normOutput
+
+if [ -z "transcript_model"];
+then
+	$home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$sjdOutput --normalize > $normOutput
+else
+	$home/Analysis/NormalizeSpliceJunctionValues.py -splice_file=$sjdOutput --normalize > $normOutput
+fi
+
 python ~/tools/MendelianRNA-seq/Analysis/FilterSpliceJunctions.py -file=$normOutput -sample=$sample -minRead=$minRead -threshold=$threshold > $filteredOutput
 rm $normOutput
