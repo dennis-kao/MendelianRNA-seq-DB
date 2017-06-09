@@ -13,7 +13,7 @@ from datetime import datetime
 #Beryl Cummings' code, modified slightly
 def printSplices(spliceDict):
 	for key in spliceDict:
-		gene, chrom, junctionStart, junctionEnd = key.split()
+		gene, gene_type, chrom, junctionStart, junctionEnd = key.split()
 		col3 = []
 		nSamplesSeen = len(spliceDict[key])
 		NTimesSeen = sum(spliceDict[key].values())
@@ -22,7 +22,7 @@ def printSplices(spliceDict):
 			col3.append(item)
 		SamplesNSeen =  ",".join(col3)
 		with open((gene + ".txt"), "a") as out:
-			out.write("\t".join([str(gene),str(chrom),str(junctionStart),str(junctionEnd),str(NTimesSeen),str(nSamplesSeen),str(SamplesNSeen)])+"\n")
+			out.write("\t".join([str(gene),str(gene_type),str(chrom),str(junctionStart),str(junctionEnd),str(NTimesSeen),str(nSamplesSeen),str(SamplesNSeen)])+"\n")
 
 # e.x. cigar='3M1D40M20N'
 def parseCIGARForIntrons(cigar):
@@ -61,7 +61,7 @@ def run(cmd, dieOnError=True):
 
 def intronDiscovery(poolArguement):
 
-	bamFiles, gene, chrom, start, stop = poolArguement
+	bamFiles, gene, gene_type, chrom, start, stop = poolArguement
 	spliceDict = {}
 
 	print 'processing ' + gene
@@ -78,6 +78,7 @@ def intronDiscovery(poolArguement):
 			print 'Exception message: ' + str(e)
 			print "Exception occured while running \"samtools view\" on " + bam + " for position " + pos + " Skipping."
 			continue
+
 		if not stdout:
 			print 'No introns found for ' + gene + ' at ' + pos + ' in ' + bam
 			continue
@@ -114,7 +115,7 @@ def intronDiscovery(poolArguement):
 			# 	out.write("\t".join([str(gene), str(bam[:-4]), str(chrom), str(junctionStart), str(junctionEnd), str(matchedExon), str(intronLength)]) + "\n")
  			
  			#Beryl Cummings' Code, taken from makeUniqSpliceDict()
-			uniqueSplice = ' '.join([gene, chrom, str(junctionStart), str(junctionEnd)])
+			uniqueSplice = ' '.join([gene, gene_type, chrom, str(junctionStart), str(junctionEnd)])
 			
 			if uniqueSplice not in spliceDict:
 				spliceDict[uniqueSplice] = {}
@@ -161,7 +162,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 				print 'Error while parsing transcript file named: ' + str(transcriptFile) + "\n" + 'Error message: ' + str(e) + "\nExiting."
 				exit (3)
 
-			poolArguements.append((bamFiles, gene, chrom, start, stop))
+			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
 
 	pool.map(intronDiscovery, poolArguements) # run the worker processes
 

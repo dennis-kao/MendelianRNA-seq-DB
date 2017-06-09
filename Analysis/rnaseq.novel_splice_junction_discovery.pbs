@@ -7,7 +7,7 @@
 
 beryl_home=~/tools/MendelianRNA-seq
 
-name=`basename $gene_list`
+name=`basename $transcriptFile`
 sjdOutput="All."$name".splicing.list"
 
 #	Optional parameters
@@ -32,7 +32,7 @@ then
 fi
 
 module load python/2.7.11
-~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcript_model -bamList=$bamList -processes=$processes
+python ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
 
 #	Default to transcript model (gencode v19) for normalization or not?
 if [ -z "$transcriptFile" ];
