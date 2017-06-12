@@ -43,7 +43,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 	4. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice junctions (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt). This file is used in NormalizeSpliceJunctionValues.py.
 	5. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
 	
-	For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
+		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
 		
 		#PBS -l walltime=10:00:00,nodes=1:ppn=10
