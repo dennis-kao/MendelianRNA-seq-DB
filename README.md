@@ -20,7 +20,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 
 	```cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> kidney.glomerular.genes.list```
 
-3. Make and navigate to a directory containing all your .bam and corresponding .bai files. Run the [novel splice junction discovery script](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/Analysis/rnaseq.novel_splice_junction_discovery.pbs). NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
+3. Make and/or navigate to a directory containing all your .bam and corresponding .bai files. Run the [novel splice junction discovery script](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/Analysis/rnaseq.novel_splice_junction_discovery.pbs). NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
 
 	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=kidney.glomerular.genes.list,bamList=bamlist.list,sample=sampleName```
 
@@ -50,13 +50,19 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 	
 ## Output
 
-The script outputs a single file with the name:
+The scripts output 2 files:
 
-threshold**X.XX**\_novel\_**sampleName**\_norm\_**All.kidney.glomerular.genes.list**.splicing.txt
+All.**kidney.glomerular.genes**.list, (where kidney.glomerular.genes is the name of your transcriptFile) 
 
-where X.XX is the threshold value, sampleName is the sample you want to discover novel junctions in, and All.kidney.glomerular.genes.list is the name of the input file.
+which contains all splice site information pertaining to all samples,
 
-The file contains text information in the format:
+and
+
+threshold**X.XX**\_novel\_**sampleName**\_norm\_**All.kidney.glomerular.genes.list**.splicing.txt, (where X.XX is the threshold value, sampleName is the sample you want to discover novel junctions in, and All.kidney.glomerular.genes.list is the name of the input file) 
+
+which contains splice sites which are only seen in sampleName and have a normalized read count greater than X.XX.
+
+The "threshold" file contains text information in the format:
 
 ```GENE	GENE-TYPE	CHROM:START-STOP	READ-COUNT	SAMPLES-SEEN	READ-COUNT:SAMPLE	SITES_ANNOTATED	NORM-READ-COUNT:SAMPLE```
 
