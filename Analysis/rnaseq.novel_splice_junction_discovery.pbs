@@ -59,5 +59,4 @@ else
 	$home/Analysis/NormalizeSpliceJunctionValues.py -splice_file=$sjdOutput --normalize > $normOutput
 fi
 
-python ~/tools/MendelianRNA-seq/Analysis/FilterSpliceJunctions.py -file=$normOutput -sample=$sample -minRead=$minRead -threshold=$threshold > $filteredOutput
 #rm $normOutput
