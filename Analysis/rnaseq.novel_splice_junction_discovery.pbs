@@ -60,4 +60,4 @@ else
 fi
 
 python ~/tools/MendelianRNA-seq/Analysis/FilterSpliceJunctions.py -file=$normOutput -sample=$sample -minRead=$minRead -threshold=$threshold > $filteredOutput
-rm $normOutput
+#rm $normOutput
