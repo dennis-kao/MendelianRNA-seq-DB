@@ -60,7 +60,7 @@ and
 
 threshold**X.XX**\_novel\_**sampleName**\_norm\_**All.kidney.glomerular.genes.list**.splicing.txt, (where X.XX is the threshold value, sampleName is the sample you want to discover novel junctions in, and All.kidney.glomerular.genes.list is the name of the input file) 
 
-which contains splice sites which are only seen in sampleName and have a normalized read count greater than X.XX.
+which contains splice sites only seen in sampleName and have a read count > minRead and a normalized read count greater than threshold.
 
 The "threshold" file contains text information in the format:
 
