@@ -84,4 +84,4 @@ ZNF404	NEXON	19:44384289-44388108	12	1	12:SAMPLE	Neither annotated	-
 ```
 ## Footnotes
 
-The included transcript_model file _gencode.comprehensive.splice.junctions.txt_ is based off of gencode v19.
+The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
