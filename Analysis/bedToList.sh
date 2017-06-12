@@ -19,5 +19,5 @@ fi
 output=$1".list"
 
 echo "Input file: "$1
-cat $1 | awk '{print $4"\t"$4"\t""+""\t"$1"\t"$2"\t"$3"\t""FILLER"}' > $output
+cat $1 | awk '{print $4"\t"$4"\t""+""\t"$1"\t"$2"\t"$3"\t""NEXON"}' > $output
 echo "Output file: "$output
