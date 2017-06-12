@@ -46,7 +46,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 	For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
 		
-			#PBS -l walltime=10:00:00,nodes=1:ppn=10
+		#PBS -l walltime=10:00:00,nodes=1:ppn=10
 	
 ## Output
 
