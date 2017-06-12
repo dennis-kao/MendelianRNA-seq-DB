@@ -4,7 +4,7 @@
 
 MendelianRNA-seq helps to discover novel splice sites in a sample given a list of bam files. SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns given a list of regions of interest and summarizes these results for read count. NormalizeSpliceJunctionValues.py normalizes the read count of each site based on read support from nearby junctions. FilterSpliceJunctions.py then filters out any site that is of low quality and/or is present in samples other than the one being studied.
 
-SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of running subprocesses can specified in the torque file or as an arguement to the standalone script. This number should be equal to or less than the number of cores on your system.
+SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the standalone script. This number should be equal to or less than the number of cores on your system.
 
 ## Steps
 
