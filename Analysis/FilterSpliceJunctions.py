@@ -1,16 +1,17 @@
 import sys
 import os
 import argparse
+from decimal import *
 
 def filter(file, sampleName, minReadCount, threshold):
 
 	minReadCount = int(minReadCount)
-	threshold = int(threshold)
+	threshold = Decimal(threshold)
 
 	with open(file) as f:
 		for line in f:
 
-			gene, gene_type, pos, ntimes, nsamp, samptimes_sorted, tag, annotation = line.strip().split("\t")
+			gene, gene_type, pos, ntimes, nsamp, samptimes_sorted, annotation, normCol = line.strip().split("\t")
 
 			if (sampleName not in line) or (int(nsamp) != 1): # only get junctions specific to sample
 				continue
@@ -18,16 +19,16 @@ def filter(file, sampleName, minReadCount, threshold):
 			if int(ntimes) < minReadCount: # minRead filtration
 				continue
 
-			if (tag == 'Neither annotated') or ('*' in line): # if neither sites are annotated or normalized read count could not be determined, print the line anyways
-				print line
+			if (annotation == 'Neither annotated') or ('*' in line): # if neither sites are annotated or normalized read count could not be determined, print the line anyways
+				print line,
 				continue
 
-			normReadCount = int(tag.split(':')[0]) # tag = normReadCount:sample
+			normReadCount = Decimal(normCol.split(':')[0]) # normCol = normReadCount:sample
 
 			if normReadCount < threshold: # normalization filtration
 				continue
 
-			print line
+			print line,
 
 if __name__=="__main__":
 

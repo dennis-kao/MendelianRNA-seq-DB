@@ -123,7 +123,12 @@ def intronDiscovery(poolArguement):
 			else:
 				spliceDict[uniqueSplice][sample] += 1
 
-	printSplices(spliceDict)
+	if spliceDict:
+		printSplices(spliceDict)
+	else:
+		with open((gene + ".txt"), "w"):
+			print 'Empty file: ' + gene + ".txt"	# an empty file is created so that you can determine the progress of SpliceJunctionDiscovery.py by using 'ls | wc -l' on the current working directory
+								# i'm not kidding, manipulating stdout with multiple subprocesses is a nightmare
 
 	print 'finished ' + gene
 
