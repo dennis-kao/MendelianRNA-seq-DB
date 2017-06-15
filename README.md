@@ -2,7 +2,7 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq helps to discover novel splice sites in a sample given a list of bam files. SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns given a list of regions of interest and summarizes these results for read count. NormalizeSpliceJunctionValues.py normalizes the read count of each site based on read support from nearby junctions. FilterSpliceJunctions.py then filters out any site that is of low quality and/or is present in samples other than the one being studied.
+MendelianRNA-seq helps to discover splice sites in a sample given a list of bam files. SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns given a list of regions of interest and summarizes these results for read count. NormalizeSpliceJunctionValues.py normalizes the read count of each site based on read support from nearby junctions. FilterSpliceJunctions.py then can be used to added OMIM annotations, filter out sites that are of low quality and/or are present in a given number of samples, and much more.
 
 SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the standalone script. This number should be equal to or less than the number of cores on your system.
 
@@ -22,14 +22,11 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 
 3. Make and/or navigate to a directory containing all your .bam and corresponding .bai files. Run the [novel splice junction discovery script](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/Analysis/rnaseq.novel_splice_junction_discovery.pbs). NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
 
-	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=kidney.glomerular.genes.list,bamList=bamlist.list,sample=sampleName```
+	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=kidney.glomerular.genes.list,bamList=bamlist.list,sample=sampName```
 
 	Mandatory parameters:
 	1. transcriptFile, path to file produced in step 2
-	2. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
-	
-	Optional parameters:
-	1. bamList, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+	2. bamList, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
 
 		```
 		control1.bam
@@ -37,24 +34,30 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 		control3.bam
 		findNovel.bam
 		```
-		
-	2. minread, the minimum number of reads a junction needs to have (default=10)
-	3. threshold, the minimum normalized read count a junction needs to have (default=0.5)
-	4. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice junctions (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt). This file is used in NormalizeSpliceJunctionValues.py.
-	5. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
+	3. sample, the name of the bam file you want to find novel junctions in, without the ".bam" extension. For example, if your file name is "findNovel.bam", then write "sample=findNovel"
+
+	Optional parameters:
+	1. minread, the minimum number of reads a junction needs to have (default=10)
+	2. threshold, the minimum normalized read count a junction needs to have (default=0.5)
+	3. [transcript_model](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt), the absolute path to a text file containing a list of known canonical splice junctions (default=/home/dennis.kao/tools/MendelianRNA-seq/gencode.comprehensive.splice.junctions.txt). This file is used in NormalizeSpliceJunctionValues.py.
+	4. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
 		
-		#PBS -l walltime=10:00:00,nodes=1:ppn=10
-	
+			#PBS -l walltime=10:00:00,nodes=1:ppn=10
+
+4. (Optional) By default the pipeline automatically generates a file with filtered results based on the following torque parameters: sample, threshold and minread. The filtered file only has splice sites which are specific to one given sample (sampName), have a minimum normalized read count (threshold) and have a minimum read count (minread). However, as a researcher, you may look to filter your dataset in multiple ways according to coverage, diagnosis, etc. 
+
+For a more comprehensive tool, use FilterSpliceJunctions.py on the file produced by the normalization script. Great documentation on how to use the script can be found near the end of this [blog post](https://macarthurlab.org/2017/05/31/improving-genetic-diagnosis-in-mendelian-disease-with-transcriptome-sequencing-a-walk-through/). 
+
 ## Output
 
 The scripts output 2 files:
 
 All.**kidney.glomerular.genes**.list, (where kidney.glomerular.genes is the name of your transcriptFile) 
 
-which contains all splice site information pertaining to all samples,
+which contains all splice site information pertaining to all samples with a column for normalized read counts,
 
 and
 
@@ -64,7 +67,7 @@ which contains splice sites only seen in sampleName that have a read count > min
 
 The "threshold" file contains text information in the format:
 
-```GENE	GENE-TYPE	CHROM:START-STOP	READ-COUNT	SAMPLES-SEEN	READ-COUNT:SAMPLE	SITES_ANNOTATED	NORM-READ-COUNT:SAMPLE```
+```GENE	GENE_TYPE	CHROM:START-STOP	READ_COUNT	SAMPLES_SEEN	READ_COUNT:SAMPLE	SITES_ANNOTATED	NORM_READ_COUNT:SAMPLE```
 
 Here is a sample output:
 
@@ -88,6 +91,7 @@ YIPF7	NEXON	4:44631565-44637938	12	1	12:SAMPLE	Neither annotated	-
 ZNF331	NEXON	19:54041746-54042470	40	1	40:SAMPLE	One annotated	40.0:SAMPLE
 ZNF404	NEXON	19:44384289-44388108	12	1	12:SAMPLE	Neither annotated	-
 ```
+
 ## Footnotes
 
 The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
