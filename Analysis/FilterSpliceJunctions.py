@@ -224,7 +224,7 @@ if __name__ == "__main__":
 	
 	gene_lists_group  =  parser.add_argument_group("Gene lists")
 	gene_lists_group.add_argument('-add_OMIM' , help = 'Add OMIM information' , action = 'store_true')
-	gene_lists_group.add_argument('-OMIM_file' , help = 'Parsed OMIM table, updated versions can be obtained from https://github.com/macarthur-lab/gene_lists' , action = 'store' , default = '/humgen/atgu1/fs03/berylc/MacGit/gene_lists/other_data/omim.use.tsv')
+	gene_lists_group.add_argument('-OMIM_file' , help = 'Parsed OMIM table, updated versions can be obtained from https://github.com/macarthur-lab/gene_lists' , action = 'store' , default = '/home/dennis/Github/gene_lists/other_data/omim.use.tsv')
 	gene_lists_group.add_argument('-only_OMIM' , help  =  'Only output splicing events seen in OMIM genes' ,  action  =  'store_true')
 	gene_lists_group.add_argument('-genes' , help = 'Check splicing in a specific list of genes. Submit a file with genes or comma-seperated string' , action = 'store')
 	

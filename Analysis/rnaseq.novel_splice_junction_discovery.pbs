@@ -59,4 +59,6 @@ else
 	$home/Analysis/NormalizeSpliceJunctionValues.py -splice_file=$sjdOutput --normalize > $normOutput
 fi
 
-#rm $normOutput
+rm $sjdOutput
+
+cat $normOutput | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" > $filteredOutput
