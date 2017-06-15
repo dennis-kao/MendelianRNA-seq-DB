@@ -46,7 +46,7 @@ then
 		bamList='bamlist.list'
 fi
 
-normOutput="norm"$sjdOutput
+normOutput="norm-"$sjdOutput
 filteredOutput="threshold"$threshold"_novel_"$sample"_norm_"$sjdOutput
 
 module load python/2.7.11

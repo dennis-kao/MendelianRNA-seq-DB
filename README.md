@@ -55,7 +55,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 
 The scripts output 2 files:
 
-All.**kidney.glomerular.genes**.list, (where kidney.glomerular.genes is the name of your transcriptFile) 
+norm-All.**kidney.glomerular.genes**.list, (where kidney.glomerular.genes is the name of your transcriptFile) 
 
 which contains all splice site information pertaining to all samples with a column for normalized read counts,
 
