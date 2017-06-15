@@ -47,9 +47,9 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 		
 			#PBS -l walltime=10:00:00,nodes=1:ppn=10
 
-4. (Optional) By default the pipeline automatically generates a file with filtered results based on the following torque parameters: sample, threshold and minread. The filtered file only has splice sites which are specific to one given sample (sampName), have a minimum normalized read count (threshold) and have a minimum read count (minread). However, as a researcher, you may look to filter your dataset in multiple ways according to coverage, diagnosis, etc. 
+4. (Optional) By default the pipeline automatically generates a file with filtered results based on the following torque parameters: sample, threshold and minread. The filtered file only has splice sites which are specific to one given sample (sample), have a minimum normalized read count (threshold) and have a minimum read count (minread). However, as a researcher, you may look to filter your dataset in multiple ways according to coverage, diagnosis, etc. 
 
-For a more comprehensive tool, use FilterSpliceJunctions.py on the file produced by the normalization script. Great documentation on how to use the script can be found near the end of this [blog post](https://macarthurlab.org/2017/05/31/improving-genetic-diagnosis-in-mendelian-disease-with-transcriptome-sequencing-a-walk-through/). 
+	For a more comprehensive tool, use FilterSpliceJunctions.py on the file produced by the normalization script. Great documentation on how to use the script can be found near the end of this [blog post](https://macarthurlab.org/2017/05/31/improving-genetic-diagnosis-in-mendelian-disease-with-transcriptome-sequencing-a-walk-through/). 
 
 ## Output
 
