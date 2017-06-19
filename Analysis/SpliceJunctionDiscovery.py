@@ -167,9 +167,9 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
 
-	pool.map_async(intronDiscovery, poolArguements) # run the worker processes
-	pool.close()
-	pool.join()
+	pool.map(intronDiscovery, poolArguements) # run the worker processes
+# 	pool.close()
+# 	pool.join()
 	
 if __name__=="__main__":
 
