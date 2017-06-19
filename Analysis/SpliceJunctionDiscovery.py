@@ -167,8 +167,10 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
 
-	pool.map(intronDiscovery, poolArguements) # run the worker processes
-
+	pool.map_async(intronDiscovery, poolArguements) # run the worker processes
+	pool.join()
+	pool.close()
+	
 if __name__=="__main__":
 
 	print 'SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
