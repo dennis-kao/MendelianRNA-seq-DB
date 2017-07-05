@@ -38,19 +38,29 @@ def main(args):
 	#Run 
 	print "1) Extracting reads from %s region" %(args.gene)
 	basename = "%s/%s_%s_%s_%s_Region."%(new_dir,sampname,args.data_type,args.gene,args.region)
-	samtools_query = ["samtools","view",args.bam,trip_region,"-bh","-o","".join([basename,"bam"])]
+	samtools_query = ["samtools","view",args.bam,trip_region,"-bh","-o","".join([basename,"bam"])] 
+	# -bh, output bam format, and include a header
+	# -o, output file name
 	print " ".join(samtools_query),"\n"
 	subprocess.check_output(samtools_query)
 
 	print "2) Bam To Fastq"
 	bedtools_query = ["bedtools","bamtofastq","-i","".join([basename,"bam"]),"-fq","".join([basename,"fastq"])]
+	# i, input
+	# fq, output fastq file
 	print " ".join(bedtools_query),"\n"
 	subprocess.check_output(bedtools_query)
 
-	print "3) Aligning with BWA. All samples will have the same toy read group information.\n"
-	RG =args.read_group.replace("SAMPLENAME",sampname)
+	# align newly generated fastq file only containing triplicate region information to the user specified psuedo single region reference file
+	# might want to alter this to use bcbio alignment tool for consistency
+	print "3) Aligning with BWA. All samples will have the same toy read group information.\n" 
+	RG = args.read_group.replace("SAMPLENAME",sampname)
 	RG = RG.replace("\t","\\t")
 	bwa_query = ["bwa","mem","-R",RG,refname,"".join([basename,"fastq"])]
+	# bwa mem, align 70bp-1Mbp query sequences with the BWA-MEM algorithm
+	# R RG, complete read group header line, aka add header/comment information
+	# refname, reads.fq, the file to be aligned
+	# "".join([basename,"fastq"]), if mates.fq is present, this command assumes the i-th read in reads.fq and the i-th read in mates.fq constitute a read pair.
 	sam_file = open("".join([basename,"sam"]),"w")
 	subprocess.call(bwa_query,stdout=sam_file)
 	sam_file.close()
@@ -83,8 +93,6 @@ def main(args):
 		os.remove("".join([basename,"sam"]))
 		os.remove("".join([basename,"fastq"]))
 		os.remove("".join([basename,"bam"]))
-	
-
 
 def print_line_of_sam(sam):
 	with open(sam) as inp:
@@ -95,9 +103,6 @@ def print_line_of_sam(sam):
 				print "\nFirst line of realigned sam file is"
 				print line
 				break
-
-
-
 
 class ForceIOStream:
     def __init__(self, stream):
@@ -111,12 +116,6 @@ class ForceIOStream:
 
     def __getattr__(self, attr):
         return getattr(self.stream, attr)
-
-
-
-
-
-
 
 if __name__== "__main__":
 	parser = argparse.ArgumentParser(description = '''Remap the triplicated region of NEB or TTN''')

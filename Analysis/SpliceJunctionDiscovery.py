@@ -62,7 +62,7 @@ def intronDiscovery(poolArguement):
 	bamFiles, gene, gene_type, chrom, start, stop = poolArguement
 	spliceDict = {}
 
-	print 'processing ' + gene
+	print ('processing ' + gene)
 
 	pos = ''.join([chrom, ':', start, '-', stop])
 
@@ -73,12 +73,12 @@ def intronDiscovery(poolArguement):
 		try:
 			exitcode, stdout, stderr = run(' '.join(['samtools view', bam, pos]))
 		except Exception as e:
-			print 'Exception message: ' + str(e)
-			print "Exception occured while running \"samtools view\" on " + bam + " for position " + pos + " Skipping."
+			print ('Exception message: ' + str(e))
+			print ("Exception occured while running \"samtools view\" on " + bam + " for position " + pos + " Skipping.")
 			continue
 
 		if not stdout:
-			print 'No introns found for ' + gene + ' at ' + pos + ' in ' + bam
+			print ('No introns found for ' + gene + ' at ' + pos + ' in ' + bam)
 			continue
 
 		for line in stdout.splitlines():
@@ -101,8 +101,8 @@ def intronDiscovery(poolArguement):
 			try:
 				offset, matchedExon, intronLength = parseCIGARForIntrons(cigar)
 			except Exception as e:
-				print 'Error message: ' + str(e)
-				print 'Error trying to parse CIGAR string: ' + cigar +  ' with the bam file ' + bam +  ' and the position: ' + pos + ' Skipping.'
+				print ('Error message: ' + str(e))
+				print ('Error trying to parse CIGAR string: ' + cigar +  ' with the bam file ' + bam +  ' and the position: ' + pos + ' Skipping.')
 				continue
 
 			junctionStart = alignmentStart + matchedExon + offset
@@ -127,10 +127,10 @@ def intronDiscovery(poolArguement):
 		printSplices(spliceDict)
 	else:
 		with open((gene + ".txt"), "w"):
-			print 'Empty file: ' + gene + ".txt"	# an empty file is created so that you can determine the progress of SpliceJunctionDiscovery.py by using 'ls | wc -l' on the current working directory
+			print ('Empty file: ' + gene + ".txt")	# an empty file is created so that you can determine the progress of SpliceJunctionDiscovery.py by using 'ls | wc -l' on the current working directory
 								# i'm not kidding, manipulating stdout with multiple subprocesses is a nightmare
 
-	print 'finished ' + gene
+	print ('finished ' + gene)
 
 def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
@@ -139,9 +139,9 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 	bamFiles = []
 	poolArguements = []
 
-	print "Creating a pool with " + numProcesses + " processes"
+	print ("Creating a pool with " + numProcesses + " processes")
 	pool = multiprocessing.Pool(int(numProcesses))
-	print 'pool: ' + str(pool)
+	print ('pool: ' + str(pool))
 
 	with open(bamList) as bl:
 		for i in bl:
@@ -150,7 +150,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 			bamLocation = os.getcwd() + '/' + i
 			if not os.path.isfile(bamLocation):
-				print 'bam file: ' + i + ' does not exist in CWD! Skipping.'
+				print ('bam file: ' + i + ' does not exist in CWD! Skipping.')
 				continue
 
 			bamFiles.append(i)
@@ -162,7 +162,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 			try:
 				gene, gene2, plus, chrom, start, stop, gene_type = elems
 			except Exception as e:
-				print 'Error while parsing transcript file named: ' + str(transcriptFile) + "\n" + 'Error message: ' + str(e) + "\nExiting."
+				print ('Error while parsing transcript file named: ' + str(transcriptFile) + "\n" + 'Error message: ' + str(e) + "\nExiting.")
 				exit (3)
 
 			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
@@ -173,7 +173,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 	
 if __name__=="__main__":
 
-	print 'SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+	print ('SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
 
 	parser = argparse.ArgumentParser(description = 'Discover splice junctions from a list of bam files')
 	parser.add_argument('-transcriptFile',help="Transcript model of canonical splicing, e.g. gencode v19. Default is set to /home/dennis.kao/largeWork/protein-coding-genes.list",action='store',default = "/home/dennis.kao/largeWork/protein-coding-genes.list")
@@ -181,16 +181,16 @@ if __name__=="__main__":
 	parser.add_argument('-processes',help='number of processes to run multiple instances of: "samtools view", default=10',default=10)
 	args=parser.parse_args()
 
-	print 'Working in directory' + str(os.getcwd())
-	print 'Transcript file is ' + str(args.transcriptFile)
-	print 'Identifying splice junction is ' + str(args.bamList)
+	print ('Working in directory' + str(os.getcwd()))
+	print ('Transcript file is ' + str(args.transcriptFile))
+	print ('Identifying splice junction is ' + str(args.bamList))
 
 	processGenesInParallel(args.transcriptFile, args.bamList, args.processes)
 	
 	transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
-	output= "All." + transcriptFile + ".splicing.list"
+	output = "All." + transcriptFile + ".splicing.list"
 
 	run("cat *.txt > " + output) #concatenate all text files generated from processGenesInParallel()
 
-	print 'Output file is: ' + output
-	print 'SpliceJunctionDiscover.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f")
+	print ('Output file is: ' + output)
+	print ('SpliceJunctionDiscover.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
