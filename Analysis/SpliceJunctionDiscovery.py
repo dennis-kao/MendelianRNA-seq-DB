@@ -8,20 +8,6 @@ from subprocess import Popen, PIPE
 from cigar import Cigar
 from datetime import datetime
 
-#Beryl Cummings' code, modified slightly
-def printSplices(spliceDict):
-	for key in spliceDict:
-		gene, gene_type, chrom, junctionStart, junctionEnd = key.split()
-		col3 = []
-		nSamplesSeen = len(spliceDict[key])
-		NTimesSeen = sum(spliceDict[key].values())
-		for pair in spliceDict[key]:
-			item = "%s:%s"%(pair,spliceDict[key][pair]) 
-			col3.append(item)
-		SamplesNSeen =  ",".join(col3)
-		with open((gene + ".txt"), "a") as out:
-			out.write("\t".join([str(gene),str(gene_type),str(chrom),str(junctionStart),str(junctionEnd),str(NTimesSeen),str(nSamplesSeen),str(SamplesNSeen)])+"\n")
-
 # e.x. cigar='3M1D40M20N'
 def parseCIGARForIntrons(cigar):
 
@@ -48,7 +34,7 @@ def parseCIGARForIntrons(cigar):
 
 	return offset, matchedExon, intronLength
 
-#run() was taken from Andy and modified:
+# run() was taken from Andy and modified:
 # http://jura.wi.mit.edu/bio/education/hot_topics/python_pipelines_2014/python_pipelines_2014.pdf
 # https://stackoverflow.com/questions/13398261/python-subprocess-call-and-subprocess-popen-stdout
 def run(cmd, dieOnError=True):
@@ -60,15 +46,12 @@ def run(cmd, dieOnError=True):
 def intronDiscovery(poolArguement):
 
 	bamFiles, gene, gene_type, chrom, start, stop = poolArguement
-	spliceDict = {}
 
 	print ('processing ' + gene)
 
 	pos = ''.join([chrom, ':', start, '-', stop])
 
 	for bam in bamFiles:
-
-		sample = bam[:-4]
 
 		try:
 			exitcode, stdout, stderr = run(' '.join(['samtools view', bam, pos]))
@@ -78,12 +61,12 @@ def intronDiscovery(poolArguement):
 			continue
 
 		if not stdout:
-			print ('No introns found for ' + gene + ' at ' + pos + ' in ' + bam)
+			#print ('No introns found for ' + gene + ' at ' + pos + ' in ' + bam)
 			continue
 
 		for line in stdout.splitlines():
 
-			elems = line.split()
+			elems = line.decode().split()
 
 			alignmentStart = int(elems[3])
 			cigar = str(elems[5])
@@ -109,26 +92,10 @@ def intronDiscovery(poolArguement):
 			junctionEnd = junctionStart + intronLength
 
 			# if spliceList gets too big and overflows RAM, then use this block to write to a file and process the genes from there
-			# with open((gene + ".txt"), "a") as out:
-			# 	out.write("\t".join([str(gene), str(bam[:-4]), str(chrom), str(junctionStart), str(junctionEnd), str(matchedExon), str(intronLength)]) + "\n")
- 			
- 			#Beryl Cummings' Code, taken from makeUniqSpliceDict()
-			uniqueSplice = ' '.join([gene, gene_type, chrom, str(junctionStart), str(junctionEnd)])
-			
-			if uniqueSplice not in spliceDict:
-				spliceDict[uniqueSplice] = {}
+			with open((gene + ".txt"), "a") as out:
+				out.write("\t".join([str(gene), str(bam[:-4]), str(chrom), str(junctionStart), str(junctionEnd), str(matchedExon), str(intronLength)]) + "\n")
 
-			if sample not in spliceDict[uniqueSplice]:	
-				spliceDict[uniqueSplice][sample] = 1
-			else:
-				spliceDict[uniqueSplice][sample] += 1
-
-	if spliceDict:
-		printSplices(spliceDict)
-	else:
-		with open((gene + ".txt"), "w"):
-			print ('Empty file: ' + gene + ".txt")	# an empty file is created so that you can determine the progress of SpliceJunctionDiscovery.py by using 'ls | wc -l' on the current working directory
-								# i'm not kidding, manipulating stdout with multiple subprocesses is a nightmare
+		del stdout
 
 	print ('finished ' + gene)
 
@@ -168,8 +135,8 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
 
 	pool.map(intronDiscovery, poolArguements) # run the worker processes
-# 	pool.close()
-# 	pool.join()
+	pool.close()
+	pool.join()
 	
 if __name__=="__main__":
 
@@ -188,9 +155,5 @@ if __name__=="__main__":
 	processGenesInParallel(args.transcriptFile, args.bamList, args.processes)
 	
 	transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
-	output = "All." + transcriptFile + ".splicing.list"
 
-	run("cat *.txt > " + output) #concatenate all text files generated from processGenesInParallel()
-
-	print ('Output file is: ' + output)
 	print ('SpliceJunctionDiscover.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
