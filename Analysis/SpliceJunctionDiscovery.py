@@ -14,7 +14,7 @@ def parseCIGARForIntrons(cigar):
 	if 'N' in cigar:
 		cigar = cigar.split('N')[0] + 'N' #remove all information after intron
 	else:
-		raise Exception('no intron detected')
+		raise Exception('No intron detected')
 
 	offset = 0
 	matchedExon = 0
@@ -50,6 +50,8 @@ def intronDiscovery(poolArguement):
 	print ('processing ' + gene)
 
 	pos = ''.join([chrom, ':', start, '-', stop])
+
+	cwd = os.getcwd()
 
 	for bam in bamFiles:
 
@@ -92,10 +94,10 @@ def intronDiscovery(poolArguement):
 			junctionEnd = junctionStart + intronLength
 
 			# if spliceList gets too big and overflows RAM, then use this block to write to a file and process the genes from there
-			with open((gene + ".txt"), "a") as out:
-				out.write("\t".join([str(gene), str(bam[:-4]), str(chrom), str(junctionStart), str(junctionEnd), str(matchedExon), str(intronLength)]) + "\n")
+			with open((cwd + "/" + bam + "/" gene + ".txt"), "a") as out:
+				out.write("\t".join([str(chrom), str(junctionStart), str(junctionEnd)]) + "\n")
 
-		del stdout
+		del stdout # saves ram in between samtool calls
 
 	print ('finished ' + gene)
 
@@ -120,6 +122,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 				print ('bam file: ' + i + ' does not exist in CWD! Skipping.')
 				continue
 
+			os.system("mkdir " + bamLocation)
 			bamFiles.append(i)
 
 	with open(transcriptFile) as tf:
