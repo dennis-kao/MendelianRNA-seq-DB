@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#PBS -l walltime=10:00:00,nodes=1:ppn=10
+#PBS -l walltime=80:00:00,nodes=1:ppn=40
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=10g,mem=10g
+#PBS -l vmem=80g,mem=80g
 
 if [ -z "$transcriptFile" ];
 then
@@ -13,14 +13,14 @@ then
 		exit 1
 fi
 
-if [ -z "$sample" ];
-then
-		echo "ERROR - Specify the name of the bam file you want to discover junctions specific to with the bam extension"
-		echo "E.x. findNovel.bam would be sample=findNovel"
-		exit 1
-fi
+#if [ -z "$sample" ];
+#then
+#		echo "ERROR - Specify the name of the bam file you want to discover junctions specific to with the bam extension"
+#		echo "E.x. findNovel.bam would be sample=findNovel"
+#		exit 1
+#fi
 
-home=~/tools/MendelianRNA-seq
+home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
 
 name=`basename $transcriptFile`
 sjdOutput="All."$name".splicing.list"
@@ -38,7 +38,7 @@ fi
 
 if [ -z "$processes" ];
 then
-		processes=10
+		processes=40
 fi
 
 if [ -z "$bamList" ];
@@ -49,16 +49,16 @@ fi
 normOutput="norm-"$sjdOutput
 filteredOutput="threshold"$threshold"_novel_"$sample"_norm_"$sjdOutput
 
-module load python/2.7.11
-python ~/tools/MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
+module load python/3.5.2
+python $home/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
 
-if [ -z "transcript_model" ];
-then
-	$home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$sjdOutput --normalize > $normOutput
-else
-	$home/Analysis/NormalizeSpliceJunctionValues.py -splice_file=$sjdOutput --normalize > $normOutput
-fi
+#if [ -z "transcript_model" ];
+#then
+#	$home/Analysis/NormalizeSpliceJunctionValues.py -transcript_model=$transcript_model -splice_file=$sjdOutput --normalize > $normOutput
+#else
+#	$home/Analysis/NormalizeSpliceJunctionValues.py -splice_file=$sjdOutput --normalize > $normOutput
+#fi
 
-rm $sjdOutput
+#rm $sjdOutput
 
-cat $normOutput | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" > $filteredOutput
+#cat $normOutput | grep $sample | awk "{ if (\$5 == 1 && \$4 >= $minread ) print \$0 }" | sed "s/:$sample//" | sed "s/:$sample//" | awk "{if (\$7 == \"Neither\" || \$9 > $threshold) print \$0}" > $filteredOutput

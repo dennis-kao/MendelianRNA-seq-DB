@@ -8,6 +8,24 @@ from subprocess import Popen, PIPE
 from cigar import Cigar
 from datetime import datetime
 
+# run() was taken from Andy and modified:
+# http://jura.wi.mit.edu/bio/education/hot_topics/python_pipelines_2014/python_pipelines_2014.pdf
+# https://stackoverflow.com/questions/13398261/python-subprocess-call-and-subprocess-popen-stdout
+def run(cmd, dieOnError=True):
+	ps = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+	exitcode = ps.returncode
+	stdout,stderr = ps.communicate()
+	return (exitcode, stdout, stderr)
+
+# Beryl Cummings' code, modified slightly
+def printSplices(path, spliceDict):
+	for key in spliceDict:
+		chrom, junctionStart, junctionEnd = key
+		timesSeenInSample = str(spliceDict[key])
+
+		with open(path, "a") as out:
+			out.write("\t".join([str(chrom),str(junctionStart),str(junctionEnd),timesSeenInSample])+"\n")
+
 # e.x. cigar='3M1D40M20N'
 def parseCIGARForIntrons(cigar):
 
@@ -34,26 +52,18 @@ def parseCIGARForIntrons(cigar):
 
 	return offset, matchedExon, intronLength
 
-# run() was taken from Andy and modified:
-# http://jura.wi.mit.edu/bio/education/hot_topics/python_pipelines_2014/python_pipelines_2014.pdf
-# https://stackoverflow.com/questions/13398261/python-subprocess-call-and-subprocess-popen-stdout
-def run(cmd, dieOnError=True):
-	ps = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-	exitcode = ps.returncode
-	stdout,stderr = ps.communicate()
-	return (exitcode, stdout, stderr)
-
 def intronDiscovery(poolArguement):
 
-	bamFiles, gene, gene_type, chrom, start, stop = poolArguement
+	bamFiles, gene, gene_type, chrom, start, stop, cwd = poolArguement
 
 	print ('processing ' + gene)
 
 	pos = ''.join([chrom, ':', start, '-', stop])
 
-	cwd = os.getcwd()
-
 	for bam in bamFiles:
+
+		spliceDict = {}
+		geneFilePath = (cwd + "/" + bam[:-4] + "/" + gene + ".txt")
 
 		try:
 			exitcode, stdout, stderr = run(' '.join(['samtools view', bam, pos]))
@@ -93,20 +103,31 @@ def intronDiscovery(poolArguement):
 			junctionStart = alignmentStart + matchedExon + offset
 			junctionEnd = junctionStart + intronLength
 
-			# if spliceList gets too big and overflows RAM, then use this block to write to a file and process the genes from there
-			with open((cwd + "/" + bam + "/" gene + ".txt"), "a") as out:
-				out.write("\t".join([str(chrom), str(junctionStart), str(junctionEnd)]) + "\n")
+			# Beryl Cummings' Code, taken from makeUniqSpliceDict()
+			# uniqueSplice = ':'.join([chrom, str(junctionStart), str(junctionEnd)])
+			uniqueSplice = (chrom, str(junctionStart), str(junctionEnd))
+			
+			if uniqueSplice not in spliceDict:
+				spliceDict[uniqueSplice] = 1
+			else:
+				spliceDict[uniqueSplice] += 1
 
 		del stdout # saves ram in between samtool calls
+
+		if spliceDict:
+			printSplices(geneFilePath, spliceDict)
+			del spliceDict
 
 	print ('finished ' + gene)
 
 def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
+	cwd = os.getcwd()
 	numProcesses = str(numProcesses) #handles ambigious Python behaviour: when set to default processes is an int, when specified as parameter processes is a string
 
 	bamFiles = []
 	poolArguements = []
+	textFileOutputDirectories = []
 
 	print ("Creating a pool with " + numProcesses + " processes")
 	pool = multiprocessing.Pool(int(numProcesses))
@@ -122,20 +143,23 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 				print ('bam file: ' + i + ' does not exist in CWD! Skipping.')
 				continue
 
-			os.system("mkdir " + bamLocation)
+			outputDirectory = bamLocation[:-4]
+
+			os.system("mkdir " + outputDirectory)
 			bamFiles.append(i)
+			textFileOutputDirectories.append(outputDirectory)
 
 	with open(transcriptFile) as tf:
 		for line in tf:
 
 			elems = line.strip().split()
 			try:
-				gene, gene2, plus, chrom, start, stop, gene_type = elems
+				gene, gene2, plus, chrom, start, stop, gene_type = elems #edit the transcript file so that you only deal with junction coordinates
 			except Exception as e:
 				print ('Error while parsing transcript file named: ' + str(transcriptFile) + "\n" + 'Error message: ' + str(e) + "\nExiting.")
 				exit (3)
 
-			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop))
+			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop, cwd))
 
 	pool.map(intronDiscovery, poolArguements) # run the worker processes
 	pool.close()
@@ -146,7 +170,7 @@ if __name__=="__main__":
 	print ('SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
 
 	parser = argparse.ArgumentParser(description = 'Discover splice junctions from a list of bam files')
-	parser.add_argument('-transcriptFile',help="Transcript model of canonical splicing, e.g. gencode v19. Default is set to /home/dennis.kao/largeWork/protein-coding-genes.list",action='store',default = "/home/dennis.kao/largeWork/protein-coding-genes.list")
+	parser.add_argument('-transcriptFile',help="A list of positions that you want to discover junctions in",action='store',default = "/home/dennis.kao/largeWork/gene-lists/all-protein-coding-genes-no-patches.list")
 	parser.add_argument('-bamList',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line',default='bamlist.list')
 	parser.add_argument('-processes',help='number of processes to run multiple instances of: "samtools view", default=10',default=10)
 	args=parser.parse_args()
@@ -157,6 +181,6 @@ if __name__=="__main__":
 
 	processGenesInParallel(args.transcriptFile, args.bamList, args.processes)
 	
-	transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
+	# transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
 
 	print ('SpliceJunctionDiscover.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
