@@ -8,10 +8,7 @@ import multiprocessing
 import subprocess
 import sqlite3
 import re
-import gc
-import psutil
 from datetime import datetime
-from sys import getsizeof
 
 databasePath = ""
 
@@ -70,7 +67,7 @@ def initializeDB():
 
 	commitAndClose(conn)
 
-def getJunctionID(cur, chrom, start, stop, reads, bam_type):
+def getJunctionID(cur, chrom, start, stop):
 
 	# gencode_annotation = {0, 1, 2, 3, 4}
 	# none, only start, only stop, both, exon skipping
@@ -82,8 +79,6 @@ def getJunctionID(cur, chrom, start, stop, reads, bam_type):
 		start is ? and 
 		stop is ?;''', (chrom, start, stop))
 	res = cur.fetchone()
-
-	# print(res)
 
 	if res:
 		ROWID, annotation = res
@@ -110,14 +105,27 @@ def getJunctionID(cur, chrom, start, stop, reads, bam_type):
 		else:
 			annotation = 0 # novel junction
 
-		cur.execute('''insert into JUNCTION_REF (
-			chromosome, 
-			start, 
-			stop, 
-			gencode_annotation) 
-			values (?, ?, ?, ?);''', (chrom, start, stop, annotation))
+		lock.acquire()
+
+		# if another worker process has inserted the same junction in between this code block's execution, then just return the junction_id from the database
+		try:
+			cur.execute('''insert into JUNCTION_REF (
+				chromosome, 
+				start, 
+				stop, 
+				gencode_annotation) 
+				values (?, ?, ?, ?);''', (chrom, start, stop, annotation))
+
+			ROWID = cur.lastrowid
+		except sqlite3.IntegrityError:
+			cur.execute('''select ROWID, gencode_annotation from JUNCTION_REF where 
+			chromosome is ? and 
+			start is ? and 
+			stop is ?;''', (chrom, start, stop))
+
+			ROWID, annotation = cur.fetchone()
 		
-		ROWID = cur.lastrowid
+		lock.release()
 
 	return ROWID, annotation
 
@@ -151,7 +159,7 @@ def normalizeReadCount(spliceDict, junction, annotation, annotated_counts):
 		key = makeStopString(chrom, stop)
 	elif annotation == 3:
 		startString = makeStartString(chrom, start)
-		stopString = makeStopString(chrom, stop)
+		stopString = makeStopString(chrom, stop)				
 
 		if annotated_counts[startString] > annotated_counts[stopString]:
 			key = startString
@@ -193,89 +201,85 @@ def get_annotated_counts(spliceDict):
 
 	return count_dict
 
-# def summarizeGeneFile(poolArguement):
+def summarizeGeneFile(poolArguement):
 
-# 	bamList, gene = poolArguement
-# 	conn, cur = connectToDB()
+	bamList, gene = poolArguement
+	conn, cur = connectToDB()
 
-# 	for bam in bamList:
+	for bam in bamList:
 
-# 		bam_id = getBAMID(cur, bam)
+		bam_id, bam_type = get_bam_id_and_type(cur, bam)
 
-# 		sample = bam[:-4]
-# 		gene_file = ''.join([os.getcwd(), "/", sample, "/", gene, ".txt"])
+		sample = bam[:-4]
+		gene_file = ''.join([os.getcwd(), "/", sample, "/", gene, ".txt"])
 
-# 		if not os.path.isfile(gene_file):
-# 			continue
+		if not os.path.isfile(gene_file):
+			continue
 
-# 		spliceDict = makeSpliceDict(sample, gene_file)
-# 		annotated_counts = get_annotated_counts(spliceDict)
+		spliceDict = makeSpliceDict(sample, gene_file)
+		annotated_counts = get_annotated_counts(spliceDict)
 
-# 		for junction in spliceDict:
+		for junction in spliceDict:
 
-# 			chrom, start, stop = junction
+			chrom, start, stop = junction
+			reads = spliceDict[junction]
 
-# 			junction_id, annotation = getJunctionID(cur, chrom, start, stop)
+			junction_id, annotation = getJunctionID(cur, chrom, start, stop)
 
-# 			# normalize read counts
-# 			try:
-# 				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
-# 			except ZeroDivisionError:
-# 				print("Zero division error when normalizing %s:%s-%s in sample %s with annotation %d"%(chrom, start, stop, sample, annotation))
-# 				norm_read_count = 'NULL'
+			try:
+				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
+			except ZeroDivisionError:
+				print("Zero division error when normalizing %s:%s-%s in genefile %s.txt in sample %s with annotation %d"%(chrom, start, stop, gene, sample, annotation))
+				norm_read_count = 'null'
 
-# 			# complex insert select join query
-# 			try:
-# 				# print ("sample: " + sample)
-# 				# print ("gene " + gene)
-# 				# print ("bam_id, junction_id, read_count, norm_read_count " + ' '.join([str(bam_id), str(junction_id), str(spliceDict[junction]), str(norm_read_count)]))
-				
-# 				cur.execute('''insert into JUNCTION_COUNTS (
-# 					bam_id,
-# 					junction_id,
-# 					read_count,
-# 					norm_read_count) 
-# 					values (?, ?, ?, ?);''', (bam_id, junction_id, spliceDict[junction], norm_read_count))
-# 			except:
-# 				# print ("============CRASH!!!!!!================")
-# 				# print ("sample: " + sample)
-# 				# print ("gene " + gene)
-# 				# print ("bam_id, junction_id, read_count, norm_read_count " + ' '.join([str(bam_id), str(junction_id), str(spliceDict[junction]), str(norm_read_count)]))
-# 				# print ("============CRASH!!!!!!================")
-# 				# exit(1)
-# 				pass
-	
-# 		del spliceDict, annotated_counts
+			lock.acquire()
 
-# 	commitAndClose(conn)
+			# check if gene is related to junction, add it if not
+			annotateJunctionWithGene(gene, junction_id, cur)
+			updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, reads, norm_read_count, cur)
+			
+			lock.release()
 
-def updateJunctionInformation(junction_id, gene, sample, new_read_count, bam_id, cur):
+		del spliceDict, annotated_counts
+		
+	commitAndClose(conn)
 
-	# check if gene is related to junction, add it if not
-	try:
-		cur.execute('''insert into GENE_REF (gene, junction_id) values (?, ?);''', (gene, junction_id))
-	except sqlite3.IntegrityError:
-		pass
+def updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, new_read_count, new_norm_read_count, cur):
 
 	# check if sample already has the junction in the database
-	cur.execute('''select ROWID, read_count, norm_read_count from JUNCTION_COUNTS where junction_id is ? and bam_id is ?;''', (junction_id, bam_id))
+	cur.execute('''select ROWID, read_count from JUNCTION_COUNTS where junction_id is ? and bam_id is ?;''', (junction_id, bam_id))
 	res = cur.fetchone()
 
 	# if it is, check if new_reads > old_reads, update JUNCTION_REF and JUNCTION_COUNTS for the appropriate sample
 	if res:
-		sample_junction_id, old_read_count, norm_read_count = res
+		sample_junction_id, old_read_count = res
 
 		if int(new_read_count) > int(old_read_count):
 
-	# if not, add it with read counts and normalized read counts, increment n_samples_seen, increment n_times_seen, 
-	else:
-		
+			# update entry to reflect new read count values
+			cur.execute('''update JUNCTION_COUNTS set read_count = ?, norm_read_count = ?, where ROWID = ?;''', (new_read_count, new_norm_read_count, sample_junction_id))
 
-def getBAMID(cur, bam):
-	cur.execute('''select ROWID, type from SAMPLE_REF where sample_name is ?;''', (bam, ))
+			# update total read counts
+			cur.execute('''update JUNCTION_REF set total_read_count = total_read_count - ? + ? where ROWID = ?;''', (old_read_count, new_read_count, junction_id))
+
+	# if not, add it with read counts and normalized read counts, increment n_samples_seen, increment n_times_seen, increment JUNCTION_REF total times seen
+	else:
+		cur.execute('''insert into JUNCTION_COUNTS (bam_id, junction_id, read_count, norm_read_count) values (?, ?, ?, ?);''', (bam_id, junction_id, new_read_count, new_norm_read_count))
+
+		if bam_type == 1:
+			cur.execute('''update JUNCTION_REF set n_patients_seen = n_patients_seen + 1, total_read_count = total_read_count + ? where ROWID = ?;''', (new_read_count, junction_id))
+		elif bam_type == 0:
+			cur.execute('''update JUNCTION_REF set n_gtex_seen = n_gtex_seen + 1, total_read_count = total_read_count + ? where ROWID = ?;''', (new_read_count, junction_id))
+
+def get_bam_id_and_type(cur, bam):
+	cur.execute('''select ROWID, type from SAMPLE_REF where sample_name = ?;''', (bam, ))
 	bam_id, bam_type = cur.fetchone()
 
 	return bam_id, bam_type
+
+def makeLockGlobal(poolLock):
+	global lock
+	lock = poolLock
 
 def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_list):
 
@@ -283,6 +287,8 @@ def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_lis
 
 	bamList = []
 	poolArguements = []
+	gene_set = set()
+	poolLock = multiprocessing.Lock()
 
 	with open(bam_files, "r") as bf:
 		for line in bf:
@@ -297,84 +303,33 @@ def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_lis
 			except sqlite3.IntegrityError as e:
 				continue # if sample already in DB, don't process it
 
-			bamList.append(bam) # only process samples if insert was successful
+			bamList.append(bam) # only process samples if insert was successful 
 
 	commitAndClose(conn)
 
-	# annotated_junction_set = make_annotated_junction_set(gencode_file)
-
-	# print ("Size of AJS: " + str(getsizeof(annotated_junction_set)))
-
+	# get only 1 instance of each gene, sets can only contain unique elements
 	with open(gene_list, "r") as gf:
 		for line in gf:
 			gene = line.strip().split()[0]
 
-			poolArguements.append((bamList, gene))
+			gene_set.add(gene)
 
-	# print ("Creating a pool with " + str(num_processes) + " processes")
-	# pool = multiprocessing.Pool(processes=int(num_processes),maxtasksperchild=100)
-	# print ('pool: ' + str(pool))
+	for gene in gene_set:
+		poolArguements.append((bamList, gene))
 
-	# pool.map(summarizeGeneFile, poolArguements)
-	# pool.close()
-	# pool.join
+	makeLockGlobal(poolLock)
 
-	for arg in poolArguements:
+	print ("Creating a pool with " + str(num_processes) + " processes")
+	pool = multiprocessing.Pool(processes=int(num_processes), maxtasksperchild=1000)
+	print ('pool: ' + str(pool))
 
-		bamList, gene = arg
-		conn, cur = connectToDB()
+	pool.map(summarizeGeneFile, poolArguements)
+	pool.close()
+	pool.join()
 
-		for bam in bamList:
-
-			bam_id, bam_type = getBAMID(cur, bam)
-
-			sample = bam[:-4]
-			gene_file = ''.join([os.getcwd(), "/", sample, "/", gene, ".txt"])
-
-			if not os.path.isfile(gene_file):
-				continue
-
-			spliceDict = makeSpliceDict(sample, gene_file)
-			annotated_counts = get_annotated_counts(spliceDict)
-
-			for junction in spliceDict:
-
-				chrom, start, stop = junction
-				reads = spliceDict[junction]
-
-				junction_id, annotation = getJunctionID(cur, chrom, start, stop, reads, bam_type)
-
-				# normalize read counts
-				try:
-					norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
-				except ZeroDivisionError:
-					print("Zero division error when normalizing %s:%s-%s in sample %s with annotation %d"%(chrom, start, stop, sample, annotation))
-					norm_read_count = 'NULL'
-
-				# complex insert select join query
-				try:
-					# print ("sample: " + sample)
-					# print ("gene " + gene)
-					# print ("bam_id, junction_id, read_count, norm_read_count " + ' '.join([str(bam_id), str(junction_id), str(spliceDict[junction]), str(norm_read_count)]))
-					
-					cur.execute('''insert into JUNCTION_COUNTS (
-						bam_id,
-						junction_id,
-						read_count,
-						norm_read_count) 
-						values (?, ?, ?, ?);''', (bam_id, junction_id, spliceDict[junction], norm_read_count))
-				except:
-					# print ("============CRASH!!!!!!================")
-					# print ("sample: " + sample)
-					# print ("gene " + gene)
-					# print ("bam_id, junction_id, read_count, norm_read_count " + ' '.join([str(bam_id), str(junction_id), str(spliceDict[junction]), str(norm_read_count)]))
-					# print ("============CRASH!!!!!!================")
-					# exit(1)
-					pass
-		
-			del spliceDict, annotated_counts
-			
-		commitAndClose(conn)
+def annotateJunctionWithGene(gene, junction_id, cur):
+	# assign the junction to the gene specified
+	cur.execute('''insert or ignore into GENE_REF (gene, junction_id) values (?, ?);''', (gene, junction_id))
 
 def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
@@ -382,14 +337,10 @@ def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 		cur.execute('''insert into JUNCTION_REF (chromosome, start, stop, gencode_annotation) values (?, ?, ?, ?);''', (chrom, start, stop, '3')) # 3 stands for both annotated
 		junction_id = cur.lastrowid
 	except sqlite3.IntegrityError:
-		cur.execute('''select ROWID from JUNCTION_REF where chromosome is ? and start is ? and stop is ?;''', (chrom, start, stop))
+		cur.execute('''select ROWID from JUNCTION_REF where chromosome = ? and start = ? and stop = ?;''', (chrom, start, stop))
 		junction_id = cur.fetchone()[0]
 
-	# assign the junction to the gene specified
-	try:
-		cur.execute('''insert into GENE_REF (gene, junction_id) values (?, ?);''', (gene, junction_id))
-	except sqlite3.IntegrityError:
-		pass # gencode file can have the same junctions coordinates, gene but differing transcript
+	annotateJunctionWithGene(gene, junction_id, cur)
 
 def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 
@@ -400,7 +351,7 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 	with open(gencode_file, "r") as gf:
 		for commitFreq, line in enumerate(gf):
 
-			gene, gene2, plus, chrom, start, stop, gene_type = line.strip().split()
+			chrom, start, stop, gene = line.strip().split()[0:4]
 
 			start = int(start)
 			stop = int(stop)
@@ -439,23 +390,22 @@ if __name__=="__main__":
 	parser.add_argument('-db',help='The name of the database you are storing junction information in, default=SpliceJunction.db',default='SpliceJunction.db')
 	mode_arguments = parser.add_mutually_exclusive_group(required=True)
 	mode_arguments.add_argument('--addGencode',action='store_true',help='Populate the database with gencode junctions, this step needs to be done once before anything else')
+	mode_arguments.add_argument('--addGencodeWithFlanks',action='store_true',help='Populate the database with gencode junctions with a +/- 1 nucleotide range, this step needs to be done once before anything else')
 	mode_arguments.add_argument('--addBAM',action='store_true',help='Add junction information from bamfiles found in the file bamlist.list')
-	flanking = parser.add_mutually_exclusive_group(required=False)
-	flanking.add_argument('--enableFlanking',action='store_true',help='Use with --addBAM. When transcript_model junctions are cross referenced for annotation or normalized, any start or stop position that falls within a +/- 1 nucleotide range is considered to be valid. Adds 5x as many transcript_model junctions and may introduce some false positives for exon skipping.')
 	args=parser.parse_args()
 
 	print ('Working in directory ' + str(os.getcwd()))
 
-	#databasePath = os.getcwd() + '/' + args.db
 	databasePath = args.db
-
-	print (databasePath)
 
 	initializeDB()
 
 	if args.addGencode: 
 		print ('Storing junctions from the transcript model file ' + args.transcript_model)
-		storeTranscriptModelJunctions(args.transcript_model, args.enableFlanking)
+		storeTranscriptModelJunctions(args.transcript_model, False)
+	elif args.addGencodeWithFlanks:
+		print ('Storing junctions with +/- 1 flanks from the transcript model file ' + args.transcript_model)
+		storeTranscriptModelJunctions(args.transcript_model, True)
 	elif args.addBAM:
 		print ('Storing junctions from bam files found in the file ' + args.bamlist)
 		parallel_process_gene_files(args.processes, args.bamlist, args.transcript_model, args.gene_list)

@@ -127,7 +127,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 	bamFiles = []
 	poolArguements = []
-	textFileOutputDirectories = []
+	sampleOutputDirectories = []
 
 	print ("Creating a pool with " + numProcesses + " processes")
 	pool = multiprocessing.Pool(int(numProcesses))
@@ -147,7 +147,7 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 			os.system("mkdir " + outputDirectory)
 			bamFiles.append(i)
-			textFileOutputDirectories.append(outputDirectory)
+			sampleOutputDirectories.append(outputDirectory)
 
 	with open(transcriptFile) as tf:
 		for line in tf:
