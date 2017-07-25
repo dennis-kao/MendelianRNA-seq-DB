@@ -367,8 +367,7 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 	with open(gencode_file, "r") as gf:
 		for commitFreq, line in enumerate(gf):
 
-			# chrom, start, stop, gene = line.strip().split()[0:4]
-			gene = line.strip().split()[0]
+			chrom, start, stop, gene = line.strip().split()[0:4]
 
 			start = int(start)
 			stop = int(stop)
