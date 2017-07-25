@@ -378,7 +378,15 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 				# generate junctions with the most extreme flanking regions of start and stop
 				addTranscriptModelJunction(chrom, (start + 1), (stop - 1), gene, cur)
 				addTranscriptModelJunction(chrom, (start - 1), (stop + 1), gene, cur)
-				
+
+				#### generate junctions with a 1 off start or stop ####
+				# fixed start
+				addTranscriptModelJunction(chrom, start, (stop - 1), gene, cur)
+				addTranscriptModelJunction(chrom, start, (stop + 1), gene, cur)
+				# fixed stop
+				addTranscriptModelJunction(chrom, (start - 1), stop, gene, cur)
+				addTranscriptModelJunction(chrom, (start + 1), stop, gene, cur)
+
 			else:
 				addTranscriptModelJunction(chrom, start, stop, gene, cur)
 
