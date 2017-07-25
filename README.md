@@ -37,7 +37,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 		PATIENT.bam
 		```
 		
-	All control bams should have the phrase "GTEX" in their file name. All other bams are considered to be patients.
+		All control bams should have the phrase "GTEX" in their file name. All other bams are considered to be patients.
 
 	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
 	
