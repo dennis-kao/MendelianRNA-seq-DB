@@ -170,16 +170,16 @@ if __name__=="__main__":
 	print ('SpliceJunctionDiscover.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
 
 	parser = argparse.ArgumentParser(description = 'Discover splice junctions from a list of bam files')
-	parser.add_argument('-transcriptFile',help="A list of positions that you want to discover junctions in",action='store',default = "/home/dennis.kao/largeWork/gene-lists/all-protein-coding-genes-no-patches.list")
-	parser.add_argument('-bamList',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line',default='bamlist.list')
+	parser.add_argument('-transcript_file',help="A list of positions that you want to discover junctions in",action='store',default = "/home/dennis.kao/largeWork/gene-lists/all-protein-coding-genes-no-patches.list")
+	parser.add_argument('-bam_list',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line',default='bamlist.list')
 	parser.add_argument('-processes',help='number of processes to run multiple instances of: "samtools view", default=10',default=10)
 	args=parser.parse_args()
 
 	print ('Working in directory' + str(os.getcwd()))
-	print ('Transcript file is ' + str(args.transcriptFile))
-	print ('Identifying splice junction is ' + str(args.bamList))
+	print ('Transcript file is ' + str(args.transcript_file))
+	print ('Identifying splice junction is ' + str(args.bam_list))
 
-	processGenesInParallel(args.transcriptFile, args.bamList, args.processes)
+	processGenesInParallel(args.transcript_file, args.bam_list, args.processes)
 	
 	# transcriptFile = str(args.transcriptFile).rsplit('/')[-1] #remove paths
 

@@ -46,6 +46,8 @@ def initializeDB():
 		gencode_annotation tinyint not null,
 		n_patients_seen unsigned big int default 0,
 		n_gtex_seen unsigned big int default 0,
+		total_patient_read_count big int default 0,
+		total_gtex_read_count big int default 0,
 		total_read_count big int default 0,
 		primary key (chromosome, start, stop));''') # gencode_annotation = {0, 1, 2, 3, 4}
 													# none, only start, only stop, both, exon skipping
@@ -278,15 +280,29 @@ def updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, new_r
 			# update total read counts
 			cur.execute('''update JUNCTION_REF set total_read_count = total_read_count - ? + ? where ROWID = ?;''', (old_read_count, new_read_count, junction_id))
 
+			# update total patient or gtex read counts
+			if bam_type == 1:
+				cur.execute('''update JUNCTION_REF set total_patient_read_count = total_patient_read_count - ? + ? where ROWID = ?;''', (old_read_count, new_read_count, junction_id))
+			elif bam_type == 0:
+				cur.execute('''update JUNCTION_REF set total_gtex_read_count = total_gtex_read_count - ? + ? where ROWID = ?;''', (old_read_count, new_read_count, junction_id))
+
 	# if not, add it with read counts and normalized read counts, increment n_samples_seen, increment n_times_seen, increment JUNCTION_REF total times seen
 	else:
 		cur.execute('''insert into JUNCTION_COUNTS (bam_id, junction_id, read_count, norm_read_count) values (?, ?, ?, ?);''', (bam_id, junction_id, new_read_count, new_norm_read_count))
 
 		# 0 = gtex, 1 = patient
 		if bam_type == 1:
-			cur.execute('''update JUNCTION_REF set n_patients_seen = n_patients_seen + 1, total_read_count = total_read_count + ? where ROWID = ?;''', (new_read_count, junction_id))
+			cur.execute('''update JUNCTION_REF set 
+				n_patients_seen = n_patients_seen + 1, 
+				total_read_count = total_read_count + ?, 
+				total_patient_read_count = total_patient_read_count + ? 
+				where ROWID = ?;''', (new_read_count, new_read_count, junction_id))
 		elif bam_type == 0:
-			cur.execute('''update JUNCTION_REF set n_gtex_seen = n_gtex_seen + 1, total_read_count = total_read_count + ? where ROWID = ?;''', (new_read_count, junction_id))
+			cur.execute('''update JUNCTION_REF set 
+				n_gtex_seen = n_gtex_seen + 1, 
+				total_read_count = total_read_count + ?, 
+				total_gtex_read_count = total_gtex_read_count + ? 
+				where ROWID = ?;''', (new_read_count, new_read_count, junction_id))
 
 def get_bam_id_and_type(cur, bam):
 	cur.execute('''select ROWID, type from SAMPLE_REF where sample_name = ?;''', (bam, ))
