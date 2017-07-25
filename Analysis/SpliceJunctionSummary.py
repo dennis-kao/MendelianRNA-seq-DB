@@ -66,6 +66,7 @@ def initializeDB():
 		primary key (gene, junction_id));''')
 
 	# not needed, since a b-tree of (chromosome, start, stop) will be used for (chromosome) and (chromosome, start)
+	# https://stackoverflow.com/questions/795031/how-do-composite-indexes-work
 	# cur.execute('''create index startJunction
 	# 	on JUNCTION_REF (chromosome, start);
 	# 	''')
@@ -118,7 +119,6 @@ def getJunctionID(cur, chrom, start, stop):
 		else:
 			annotation = 0 # novel junction
 
-		# if another worker process has inserted the same junction in between this code block's execution, then just return the junction_id from the database
 		try:
 			cur.execute('''insert into JUNCTION_REF (
 				chromosome, 
@@ -128,7 +128,7 @@ def getJunctionID(cur, chrom, start, stop):
 				values (?, ?, ?, ?);''', (chrom, start, stop, annotation))
 
 			ROWID = cur.lastrowid
-		except sqlite3.IntegrityError:
+		except sqlite3.IntegrityError: # if another worker process has inserted the same junction in between this code block's execution, then just return the junction_id from the database
 			cur.execute('''select ROWID, gencode_annotation from JUNCTION_REF where 
 			chromosome is ? and 
 			start is ? and 
@@ -379,7 +379,7 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 				addTranscriptModelJunction(chrom, (start + 1), (stop - 1), gene, cur)
 				addTranscriptModelJunction(chrom, (start - 1), (stop + 1), gene, cur)
 
-				#### generate junctions with a 1 off start or stop ####
+				# generate junctions with a 1 off start or stop
 				# fixed start
 				addTranscriptModelJunction(chrom, start, (stop - 1), gene, cur)
 				addTranscriptModelJunction(chrom, start, (stop + 1), gene, cur)
