@@ -13,7 +13,7 @@ from datetime import datetime
 databasePath = ""
 
 def connectToDB():
-	conn = sqlite3.connect('SpliceJunction.db')
+	conn = sqlite3.connect('SpliceJunction.db', timeout=20)
 	cur = conn.cursor()
 
 	return conn, cur
@@ -65,6 +65,19 @@ def initializeDB():
 		foreign key(junction_id) references JUNCTION_REF(ROWID)
 		primary key (gene, junction_id));''')
 
+	# not needed, since a b-tree of (chromosome, start, stop) will be used for (chromosome) and (chromosome, start)
+	# cur.execute('''create index startJunction
+	# 	on JUNCTION_REF (chromosome, start);
+	# 	''')
+
+	cur.execute('''create index stopJunction
+		on JUNCTION_REF (chromosome, stop);
+		''')
+
+	cur.execute('''create unique index wholeJunction
+		on JUNCTION_REF (chromosome, start, stop);
+		''')
+
 	commitAndClose(conn)
 
 def getJunctionID(cur, chrom, start, stop):
@@ -105,8 +118,6 @@ def getJunctionID(cur, chrom, start, stop):
 		else:
 			annotation = 0 # novel junction
 
-		lock.acquire()
-
 		# if another worker process has inserted the same junction in between this code block's execution, then just return the junction_id from the database
 		try:
 			cur.execute('''insert into JUNCTION_REF (
@@ -125,8 +136,6 @@ def getJunctionID(cur, chrom, start, stop):
 
 			ROWID, annotation = cur.fetchone()
 		
-		lock.release()
-
 	return ROWID, annotation
 
 def makeSpliceDict(bam, gene_file):
@@ -206,6 +215,8 @@ def summarizeGeneFile(poolArguement):
 	bamList, gene = poolArguement
 	conn, cur = connectToDB()
 
+	print ('processing ' + gene)
+
 	for bam in bamList:
 
 		bam_id, bam_type = get_bam_id_and_type(cur, bam)
@@ -232,17 +243,18 @@ def summarizeGeneFile(poolArguement):
 				print("Zero division error when normalizing %s:%s-%s in genefile %s.txt in sample %s with annotation %d"%(chrom, start, stop, gene, sample, annotation))
 				norm_read_count = 'null'
 
-			lock.acquire()
-
 			# check if gene is related to junction, add it if not
 			annotateJunctionWithGene(gene, junction_id, cur)
+
+			lock.acquire()
 			updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, reads, norm_read_count, cur)
-			
 			lock.release()
 
 		del spliceDict, annotated_counts
 		
 	commitAndClose(conn)
+
+	print ('finished ' + gene)
 
 def updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, new_read_count, new_norm_read_count, cur):
 
@@ -257,7 +269,7 @@ def updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, new_r
 		if int(new_read_count) > int(old_read_count):
 
 			# update entry to reflect new read count values
-			cur.execute('''update JUNCTION_COUNTS set read_count = ?, norm_read_count = ?, where ROWID = ?;''', (new_read_count, new_norm_read_count, sample_junction_id))
+			cur.execute('''update JUNCTION_COUNTS set read_count = ?, norm_read_count = ? where ROWID = ?;''', (new_read_count, new_norm_read_count, sample_junction_id))
 
 			# update total read counts
 			cur.execute('''update JUNCTION_REF set total_read_count = total_read_count - ? + ? where ROWID = ?;''', (old_read_count, new_read_count, junction_id))
@@ -317,10 +329,8 @@ def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_lis
 	for gene in gene_set:
 		poolArguements.append((bamList, gene))
 
-	makeLockGlobal(poolLock)
-
 	print ("Creating a pool with " + str(num_processes) + " processes")
-	pool = multiprocessing.Pool(processes=int(num_processes), maxtasksperchild=1000)
+	pool = multiprocessing.Pool(initializer=makeLockGlobal, initargs=(poolLock, ), processes=int(num_processes), maxtasksperchild=1000)
 	print ('pool: ' + str(pool))
 
 	pool.map(summarizeGeneFile, poolArguements)
@@ -344,6 +354,7 @@ def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
 def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 
+	initializeDB()
 	conn, cur = connectToDB()
 
 	print ('Started adding transcript_model junctions @ ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
@@ -398,9 +409,7 @@ if __name__=="__main__":
 
 	databasePath = args.db
 
-	initializeDB()
-
-	if args.addGencode: 
+	if args.addGencode:
 		print ('Storing junctions from the transcript model file ' + args.transcript_model)
 		storeTranscriptModelJunctions(args.transcript_model, False)
 	elif args.addGencodeWithFlanks:
