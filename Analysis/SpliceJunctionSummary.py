@@ -79,6 +79,10 @@ def initializeDB():
 		on JUNCTION_REF (chromosome, start, stop);
 		''')
 
+	cur.execute('''create unique index sample_junction
+		on JUNCTION_COUNTS (bam_id, junction_id);
+		''')
+
 	commitAndClose(conn)
 
 def getJunctionID(cur, chrom, start, stop):
@@ -278,6 +282,7 @@ def updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, new_r
 	else:
 		cur.execute('''insert into JUNCTION_COUNTS (bam_id, junction_id, read_count, norm_read_count) values (?, ?, ?, ?);''', (bam_id, junction_id, new_read_count, new_norm_read_count))
 
+		# 0 = gtex, 1 = patient
 		if bam_type == 1:
 			cur.execute('''update JUNCTION_REF set n_patients_seen = n_patients_seen + 1, total_read_count = total_read_count + ? where ROWID = ?;''', (new_read_count, junction_id))
 		elif bam_type == 0:
@@ -362,7 +367,8 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 	with open(gencode_file, "r") as gf:
 		for commitFreq, line in enumerate(gf):
 
-			chrom, start, stop, gene = line.strip().split()[0:4]
+			# chrom, start, stop, gene = line.strip().split()[0:4]
+			gene = line.strip().split()[0]
 
 			start = int(start)
 			stop = int(stop)

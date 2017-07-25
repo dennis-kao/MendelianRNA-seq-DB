@@ -3,12 +3,9 @@
 #PBS -l walltime=80:00:00,nodes=1:ppn=40
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=80g,mem=80g
+#PBS -l vmem=30g,mem=30g
 
 home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
-
-normOutput="norm-"$sjdOutput
-filteredOutput="threshold"$threshold"_novel_"$sample"_norm_"$sjdOutput
 
 module load python/3.5.2
 python $home/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
