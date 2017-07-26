@@ -125,7 +125,6 @@ def getJunctionID(cur, chrom, start, stop):
 		else:
 			annotation = 0 # novel junction
 
-		lock.acquire()
 		try:
 			cur.execute('''insert into JUNCTION_REF (
 				chromosome, 
@@ -142,7 +141,6 @@ def getJunctionID(cur, chrom, start, stop):
 			stop is ?;''', (chrom, start, stop))
 
 			ROWID, annotation = cur.fetchone()
-		lock.release()
 		
 	return ROWID, annotation
 
@@ -243,7 +241,9 @@ def summarizeGeneFile(poolArguement):
 			chrom, start, stop = junction
 			reads = spliceDict[junction]
 
+			lock.acquire()
 			junction_id, annotation = getJunctionID(cur, chrom, start, stop)
+			lock.release()
 
 			try:
 				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
