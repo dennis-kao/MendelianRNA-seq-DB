@@ -4,7 +4,7 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover splice sites in a list of bam files. SpliceJunctionDiscovery.py calls  samtools to report the presence of introns from a list of regions of interest and outputs their read counts. SpliceJunctionSummary.py reads the output and stores this information into a database. The database can then be querried in a number of ways to isolate or filter junctions in hopes of finding an aberrant splicing event which may then be used to diagnose a patient with a rare disease.
+MendelianRNA-seq-DB is a tool to discover splice sites in a list of bam files. SpliceJunctionDiscovery.py calls  samtools to report the presence of introns from a list of regions of interest and outputs their read counts to text files. SpliceJunctionSummary.py reads this output and stores the information into a database. The database can then be querried in a number of ways to filter junctions in hopes of finding an aberrant splicing event which may then be used to diagnose a patient with a rare disease.
 
 SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. This number should be equal to or less than the number of threads on your system.
 
@@ -62,7 +62,7 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 
 	1. SAMPLE_REF, a list of samples and their type (0 = GTEX or control, 1 = patient)
 	2. JUNCTION_REF, a list of junctions and their frequency of appearances in samples
-	3. JUNCTION_COUNTS, read counts of junctions specific to a sample
+	3. JUNCTION_COUNTS, read counts of junctions in a sample
 	4. GENE_REF, an annotation of junctions with genes, a single junction can map to multiple genes
 	
 A Python script to query the database will be added later on.
