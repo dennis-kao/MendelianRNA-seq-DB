@@ -1,22 +1,27 @@
 #!/bin/bash
 
-#PBS -l walltime=10:00:00,nodes=1:ppn=20
+#PBS -l walltime=10:00:00,nodes=1:ppn=4
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=50g,mem=50g
+#PBS -l vmem=10g,mem=10g
 
 home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
 
-if [ -z "$transcriptFile" ];
+if [ -z "$transcriptfile" ];
 then
-		transcriptFile=$home/gencode.comprehensive.splice.junctions.txt
+		transcriptfile=$home/gencode.comprehensive.splice.junctions.txt
 fi
 
 if [ -z "$processes" ];
 then
-		processes=20
+		processes=4
+fi
+
+if [ -z "$genelist" ];
+then
+	genelist=$home/all-protein-coding-genes.list
 fi
 
 module load python/3.5.2
-python $home/Analysis/AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=/home/dennis.kao/tools/MendelianRNA-seq-DB/gencode.comprehensive.splice.junctions.txt
-python $home/Analysis/AddJunctionsToDatabase.py --addBAM -gene_list=/home/dennis.kao/largeWork/gene-lists/all-protein-coding-genes.list -processes=20
+python $home/Analysis/AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=$transcriptfile
+python $home/Analysis/AddJunctionsToDatabase.py --addBAM -gene_list=$genelist -processes=$processes

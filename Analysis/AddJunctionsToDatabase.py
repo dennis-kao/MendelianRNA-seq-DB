@@ -13,7 +13,7 @@ from datetime import datetime
 databasePath = ""
 
 def connectToDB():
-	conn = sqlite3.connect('SpliceJunction.db', timeout=20)
+	conn = sqlite3.connect('SpliceJunction.db', timeout=15)
 	cur = conn.cursor()
 
 	return conn, cur
@@ -27,11 +27,6 @@ def initializeDB():
 	conn, cur = connectToDB()
 
 	cur.execute('''PRAGMA journal_mode=WAL;''')
-
-	# if not ('wal' in cur.fetchone()):
-	# 	print("Could not set SQLite database to WAL mode. Exiting.")
-	# 	exit(1)
-
 	cur.execute('''PRAGMA foreign_keys = ON;''')
 
 	cur.execute('''create table if not exists SAMPLE_REF (
@@ -49,7 +44,7 @@ def initializeDB():
 		total_patient_read_count big int default 0,
 		total_gtex_read_count big int default 0,
 		total_read_count big int default 0,
-		primary key (chromosome, start, stop));''') # gencode_annotation = {0, 1, 2, 3, 4}
+		primary key (start, stop, chromosome));''') # gencode_annotation = {0, 1, 2, 3, 4}
 													# none, only start, only stop, both, exon skipping
 
 	cur.execute('''create table if not exists JUNCTION_COUNTS (
@@ -59,30 +54,22 @@ def initializeDB():
 		norm_read_count float,
 		foreign key(bam_id) references SAMPLE_REF(ROWID),
 		foreign key(junction_id) references JUNCTION_REF(ROWID),
-		primary key (bam_id, junction_id));''')
+		primary key (junction_id, bam_id));''')
 
 	cur.execute('''create table if not exists GENE_REF (
 		gene varchar(30) not null,
 		junction_id integer not null,
-		foreign key(junction_id) references JUNCTION_REF(ROWID)
-		primary key (gene, junction_id));''')
+		foreign key(junction_id) references JUNCTION_REF(ROWID),
+		primary key (junction_id, gene));''')
 
-	# not needed, since a b-tree of (chromosome, start, stop) will be used for (chromosome) and (chromosome, start)
-	# https://stackoverflow.com/questions/795031/how-do-composite-indexes-work
-	# cur.execute('''create index startJunction
-	# 	on JUNCTION_REF (chromosome, start);
-	# 	''')
+	cur.execute('''create table if not exists TRANSCRIPT_MODEL_JUNCTIONS (
+		chromosome tinyint not null,
+		start unsigned big int not null,
+		stop unsigned big int not null,
+		primary key (chromosome, start, stop));''')
 
-	cur.execute('''create index stopJunction
-		on JUNCTION_REF (chromosome, stop);
-		''')
-
-	cur.execute('''create unique index wholeJunction
-		on JUNCTION_REF (chromosome, start, stop);
-		''')
-
-	cur.execute('''create unique index sample_junction
-		on JUNCTION_COUNTS (bam_id, junction_id);
+	cur.execute('''create index if not exists stopJunction
+		on TRANSCRIPT_MODEL_JUNCTIONS (chromosome, stop);
 		''')
 
 	commitAndClose(conn)
@@ -95,7 +82,7 @@ def getJunctionID(cur, chrom, start, stop):
 
 	# check if start and stop are apart of an existing gencode annotation
 	cur.execute('''select ROWID, gencode_annotation from JUNCTION_REF where 
-		chromosome is ? and 
+		chromosome is ? and
 		start is ? and 
 		stop is ?;''', (chrom, start, stop))
 	res = cur.fetchone()
@@ -104,15 +91,13 @@ def getJunctionID(cur, chrom, start, stop):
 		ROWID, annotation = res
 	else: # if no such junction determine annotation of new junction: novel junction, only one annotated or a case of exon skipping?
 		
-		cur.execute('''select * from JUNCTION_REF where 
-			gencode_annotation is 3 and 
-			chromosome is ? and 
+		cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+			chromosome is ? and
 			start is ?;''', (chrom, start))
 		isStartAnnotated = cur.fetchone()
 
-		cur.execute('''select * from JUNCTION_REF where 
-			gencode_annotation is 3 and 
-			chromosome is ? and 
+		cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+			chromosome is ? and
 			stop is ?;''', (chrom, stop))
 		isStopAnnotated = cur.fetchone()
 
@@ -241,9 +226,7 @@ def summarizeGeneFile(poolArguement):
 			chrom, start, stop = junction
 			reads = spliceDict[junction]
 
-			lock.acquire()
 			junction_id, annotation = getJunctionID(cur, chrom, start, stop)
-			lock.release()
 
 			try:
 				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
@@ -251,14 +234,14 @@ def summarizeGeneFile(poolArguement):
 				print("Zero division error when normalizing %s:%s-%s in genefile %s.txt in sample %s with annotation %d"%(chrom, start, stop, gene, sample, annotation))
 				norm_read_count = 'null'
 
-			lock.acquire()
-			# check if gene is related to junction, add it if not
 			annotateJunctionWithGene(gene, junction_id, cur)
+
+			lock.acquire()
 			updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, reads, norm_read_count, cur)
 			lock.release()
 
 		del spliceDict, annotated_counts
-		
+	
 	commitAndClose(conn)
 
 	print ('finished ' + gene)
@@ -352,7 +335,7 @@ def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_lis
 		poolArguements.append((bamList, gene))
 
 	print ("Creating a pool with " + str(num_processes) + " processes")
-	pool = multiprocessing.Pool(initializer=makeLockGlobal, initargs=(poolLock, ), processes=int(num_processes), maxtasksperchild=1000)
+	pool = multiprocessing.Pool(initializer=makeLockGlobal, initargs=(poolLock, ), processes=int(num_processes))
 	print ('pool: ' + str(pool))
 
 	pool.map(summarizeGeneFile, poolArguements)
@@ -365,6 +348,8 @@ def annotateJunctionWithGene(gene, junction_id, cur):
 
 def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
+	cur.execute('''insert or ignore into TRANSCRIPT_MODEL_JUNCTIONS (chromosome, start, stop) values (?, ?, ?);''', (chrom, start, stop))
+
 	try:
 		cur.execute('''insert into JUNCTION_REF (chromosome, start, stop, gencode_annotation) values (?, ?, ?, ?);''', (chrom, start, stop, '3')) # 3 stands for both annotated
 		junction_id = cur.lastrowid
@@ -376,7 +361,6 @@ def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
 def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 
-	initializeDB()
 	conn, cur = connectToDB()
 
 	print ('Started adding transcript_model junctions @ ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
@@ -397,6 +381,7 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 					stopFlank = stop + offset
 					addTranscriptModelJunction(chrom, startFlank, stopFlank, gene, cur)
 
+				# helps to reduce exon skipping false positives at the cost of more transcript_model junctions
 				# generate junctions with the most extreme flanking regions of start and stop
 				addTranscriptModelJunction(chrom, (start + 1), (stop - 1), gene, cur)
 				addTranscriptModelJunction(chrom, (start - 1), (stop + 1), gene, cur)
@@ -438,6 +423,8 @@ if __name__=="__main__":
 	print ('Working in directory ' + str(os.getcwd()))
 
 	databasePath = args.db
+
+	initializeDB()
 
 	if args.addGencode:
 		print ('Storing junctions from the transcript model file ' + args.transcript_model)
