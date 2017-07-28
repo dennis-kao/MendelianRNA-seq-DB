@@ -10,10 +10,13 @@ import sqlite3
 import re
 from datetime import datetime
 
-databasePath = ""
+# databasePath = ""
 
 def connectToDB():
-	conn = sqlite3.connect('SpliceJunction.db', timeout=15)
+
+	#timeout=10 is ok for a SSD, or PCI-E SSD
+	#timeout=80 for the HPF server and its slow disks :(
+	conn = sqlite3.connect('SpliceJunction.db', timeout=80)
 	cur = conn.cursor()
 
 	return conn, cur
@@ -31,8 +34,10 @@ def initializeDB():
 
 	cur.execute('''create table if not exists SAMPLE_REF (
 		sample_name varchar(50) primary key, 
-		type tinyint not null);''') # type = {0, 1} 
-									# GTEX, patient
+		type tinyint not null);''') 
+
+		# type = {0, 1} 
+		# GTEX, patient
 
 	cur.execute('''create table if not exists JUNCTION_REF (
 		chromosome tinyint not null,
@@ -44,8 +49,10 @@ def initializeDB():
 		total_patient_read_count big int default 0,
 		total_gtex_read_count big int default 0,
 		total_read_count big int default 0,
-		primary key (start, stop, chromosome));''') # gencode_annotation = {0, 1, 2, 3, 4}
-													# none, only start, only stop, both, exon skipping
+		primary key (start, stop, chromosome));''') 
+		
+		# gencode_annotation = {0, 1, 2, 3, 4}
+		# none, only start, only stop, both, exon skipping
 
 	cur.execute('''create table if not exists JUNCTION_COUNTS (
 		bam_id integer not null,
@@ -236,6 +243,7 @@ def summarizeGeneFile(poolArguement):
 
 			annotateJunctionWithGene(gene, junction_id, cur)
 
+			# locks are needed to maintain total read count integrity
 			lock.acquire()
 			updateJunctionInformation(junction_id, bam_id, bam_type, gene, sample, reads, norm_read_count, cur)
 			lock.release()
@@ -413,7 +421,7 @@ if __name__=="__main__":
 	parser.add_argument('-processes',help='Number of worker processes to parse gene files, default=10.',default=10)
 	parser.add_argument('-bamlist',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line, default=bamlist.list',default='bamlist.list')
 	parser.add_argument('-gene_list',help='A text file containing the names of all the genes you want to investigate, default=gene_list.txt',default='gene_list.txt')
-	parser.add_argument('-db',help='The name of the database you are storing junction information in, default=SpliceJunction.db',default='SpliceJunction.db')
+	# parser.add_argument('-db',help='The name of the database you are storing junction information in, default=SpliceJunction.db',default='SpliceJunction.db')
 	mode_arguments = parser.add_mutually_exclusive_group(required=True)
 	mode_arguments.add_argument('--addGencode',action='store_true',help='Populate the database with gencode junctions, this step needs to be done once before anything else')
 	mode_arguments.add_argument('--addGencodeWithFlanks',action='store_true',help='Populate the database with gencode junctions with a +/- 1 nucleotide range, this step needs to be done once before anything else')
@@ -422,7 +430,7 @@ if __name__=="__main__":
 
 	print ('Working in directory ' + str(os.getcwd()))
 
-	databasePath = args.db
+	# databasePath = args.db
 
 	initializeDB()
 

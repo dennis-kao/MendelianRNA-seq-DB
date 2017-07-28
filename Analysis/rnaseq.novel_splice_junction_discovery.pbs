@@ -8,5 +8,5 @@
 home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
 
 module load python/3.5.2
-python $home/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
+python3 $home/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
 

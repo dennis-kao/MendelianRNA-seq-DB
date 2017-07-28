@@ -23,5 +23,5 @@ then
 fi
 
 module load python/3.5.2
-python $home/Analysis/AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=$transcriptfile
-python $home/Analysis/AddJunctionsToDatabase.py --addBAM -gene_list=$genelist -processes=$processes
+python3 $home/Analysis/AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=$transcriptfile
+python3 $home/Analysis/AddJunctionsToDatabase.py --addBAM -gene_list=$genelist -processes=$processes
