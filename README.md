@@ -6,7 +6,7 @@
 
 MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq).
 
-#### Pipeline
+## Pipeline
 
 SpliceJunctionDiscovery.py calls samtools to report the presence of introns from a list of regions of interest and outputs their read counts to text files. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
 
@@ -69,7 +69,7 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 	3. JUNCTION_COUNTS, read counts of junctions in a sample
 	4. GENE_REF, an annotation of junctions with genes, a single junction can map to multiple genes
 	
-A Python script to query the database will be added later on.
+Documentation on how to use FilterSpliceJunctions.py will be added later.
 
 ## Differences between MendelianRNA-seq-DB and Beryl Cumming's original MendelianRNA-seq
 
