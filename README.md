@@ -50,13 +50,15 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 		
 			#PBS -l walltime=10:00:00,nodes=1:ppn=10
 
-4. Run SpliceJunctionDiscovery.py with --addGencode or --addGencodeWithFlanks to initally populate the database with gencode junctions. 
+4. Run AddJunctionsToDatabase.py with --addGencode or --addGencodeWithFlanks to initally populate the database with gencode junctions. 
 
-	```python3 SpliceJunctionDiscovery.py --addGencodeWithFlanks -transcript_model=gencode.comprehensive.splice.junctions.txt```
+	```python3 AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=gencode.comprehensive.splice.junctions.txt```
 	
 5. Run SpliceJunctionDiscovery.py with --addBAM to populate the database with junctions and read counts from your samples.
 
-	```python3 SpliceJunctionDiscovery.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list```
+	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list```
+	
+6. Documentation on how to use FilterSpliceJunctions.py will be added later.
 
 ## Output
 
@@ -68,8 +70,6 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 	2. JUNCTION_REF, a list of junctions and their frequency of appearances in samples
 	3. JUNCTION_COUNTS, read counts of junctions in a sample
 	4. GENE_REF, an annotation of junctions with genes, a single junction can map to multiple genes
-	
-Documentation on how to use FilterSpliceJunctions.py will be added later.
 
 ## Differences between MendelianRNA-seq-DB and Beryl Cumming's original MendelianRNA-seq
 
