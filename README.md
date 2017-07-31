@@ -86,7 +86,7 @@ A Python script to query the database will be added later on.
 	```
 - Junction annotation now discriminates between START and STOP instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking the reference transcript_model to see if the start and stop positions belong to different junctions.
 - Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated junction as the denominator whereas before only "BOTH" annotated junctions were used
-- From the gencode file, multipe junctions are generated to increase the definition for what is considered to be "annotated". The start and stop position of each junction both have a +/- 1 tolerance. The different combinations of these values (i.e. junction = start + 1, stop + 1) can be been in the function storeTranscriptModelJunctions() of [AddJunctionsToDatabase.py](Analysis/AddJunctionsToDatabase.py). There is an option to not use flanking at all (--addGencode). This likely introduces a larger number of false positives for reported EXON_SKIP events.
+- From the gencode file, multipe junctions are generated to increase the definition for what is considered to be "annotated". The start and stop position of each junction both have a +/- 1 tolerance. The different combinations of these values (i.e. junction = start + 1, stop + 1) can be been in the function storeTranscriptModelJunctions() of [AddJunctionsToDatabase.py](Analysis/AddJunctionsToDatabase.py). This likely introduces a larger number of false positives for reported EXON_SKIP events. There is an option to not use flanking at all (--addGencode). 
 
 ## Citations
 
