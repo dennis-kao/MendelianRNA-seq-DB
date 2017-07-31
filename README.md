@@ -91,6 +91,7 @@ A Python script to query the database will be added later on.
 ## Citations
 
 [Improving genetic diagnosis in Mendelian disease with transcriptome sequencing](http://stm.sciencemag.org/content/9/386/eaal5209)
+
 Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
 
 ## Footnotes
