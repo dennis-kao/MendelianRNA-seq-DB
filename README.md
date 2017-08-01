@@ -42,34 +42,21 @@ cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNE
 
 ## Steps
 
-1. Run bcbio RNA-seq pipeline to get bam files
-
-2. Create a list of genes of interest (muscular or kidney), in the format:
-	
-	```GENE	ENSG	STRAND	CHROM	START	STOP	NEXONS```
-
-	use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) for that.
-
-	Some ready list are in data folder.
-
-	```cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> kidney.glomerular.genes.list```
-
-
-1. Put bamlist.list, .bam files, .bai files in a seperate directory. Navigate to it. 
+1. Put bamlist.list, .bam files, .bai files in a new directory. Navigate to it. 
 	NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
 
 2. For [Torque](http://www.adaptivecomputing.com/products/open-source/torque/) users there is a [PBS file](Analysis/rnaseq.novel_splice_junction_discovery.pbs) containing all the commands you need to run. Just change the "home" directory in the file to match where you placed the MendelianRNA-seq folder and run: 
 
 	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=transcript_file,bamList=bamlist.list,processes=10```
 	
-	For non-Torque users, the scripts can be run from terminal:
+	For non-Torque users, SpliceJunctionDiscovery can be run from terminal:
 	
 	```python3 MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes```
 	
 	Parameters:
 	1. transcriptFile, path to file #2
 	2. bamList, path to file #3
-	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. **Keep in mind that increasing the number of worker processes consumes more ram.** Read further on for an explanation on RAM use.
+	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine.
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
