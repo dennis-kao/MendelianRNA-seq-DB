@@ -4,7 +4,9 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq).
+MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
+
+The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that you only have to process each BAM once and analyzing a new sample means adding the sample to the database then querrying it.
 
 ## Pipeline
 
