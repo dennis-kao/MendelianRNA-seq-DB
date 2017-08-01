@@ -8,9 +8,37 @@ MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM fi
 
 ## Pipeline
 
-SpliceJunctionDiscovery.py calls samtools to report the presence of introns from a list of regions of interest and outputs their read counts to text files. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
+SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns in a list of regions of interest, summarizes their read counts, and writes this to a text file. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
 
-SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for sample sizes less than 100. Querrying the database using FilterSpliceJunctions is probably the fastest step.
+SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. 
+
+AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for sample sizes less than 100. Querrying the database using FilterSpliceJunctions is probably the fastest step taking seconds to execute.
+
+## Required files
+
+1. .bam (and .bai) files produced from an RNA-seq pipeline - You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
+
+2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
+	```
+	GENE	ENSG	STRAND	CHROM	START	STOP	GENE_TYPE
+	```
+	You can use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) for that, or convert an existing .bed file using this bash line:
+```
+cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> gene.list
+```
+3. bamlist.list - A file containing the names of all the bams you want to discover junctions in. The file should quite simply be:
+	
+	
+		G65693.GTEX.8TY6-5R5T.2.bam
+		G55612.GTEX.7G54-3GS8.1.bam
+		G09321.GTEX.0EYJ-9E12.3.bam
+		PATIENT.bam
+	
+	
+	An easy way to generate this file would be to navigate to a directory containing the .bam files you want to use and running this line: ```ls *.bam | grep '' > bamlist.list```
+
+4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, one, both) and it's annotated normalization calculation. You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
+
 
 ## Steps
 
@@ -26,43 +54,41 @@ SpliceJunctionDiscovery.py usually takes the longest to execute because it calls
 
 	```cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> kidney.glomerular.genes.list```
 
-3. Make and/or navigate to a directory containing .bam and corresponding .bai files. Run the [novel splice junction discovery script](Analysis/rnaseq.novel_splice_junction_discovery.pbs).
 
-	```qsub /home/MendelianRNA-seq-DB/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=kidney.glomerular.genes.list,bamList=bamlist.list```
+1. Put bamlist.list, .bam files, .bai files in a seperate directory. Navigate to it. 
+	NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
 
-	Mandatory parameters:
-	1. transcript_file, path to file produced in step 2
-	2. bam_list, a text file containing the names of all bam files used in the analysis, each on a seperate line. For example:
+2. For [Torque](http://www.adaptivecomputing.com/products/open-source/torque/) users there is a [PBS file](Analysis/rnaseq.novel_splice_junction_discovery.pbs) containing all the commands you need to run. Just change the "home" directory in the file to match where you placed the MendelianRNA-seq folder and run: 
 
-		```
-		G65693.GTEX.8TY6-5R5T.2.bam
-		G55612.GTEX.7G54-3GS8.1.bam
-		G09321.GTEX.0EYJ-9E12.3.bam
-		PATIENT.bam
-		```
-		
-		All control BAMs should have the phrase "GTEX" in their file name. BAMs without this condition are considered to be patients.
-
-	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. 
+	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=transcript_file,bamList=bamlist.list,processes=10```
 	
-		For torque users: This number should also be equal to or less than the number specified for ppn in [rnaseq.novel_splice_junction_discovery.pbs](Analysis/rnaseq.splice_junction_summary.pbs):
+	For non-Torque users, the scripts can be run from terminal:
+	
+	```python3 MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes```
+	
+	Parameters:
+	1. transcriptFile, path to file #2
+	2. bamList, path to file #3
+	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine. **Keep in mind that increasing the number of worker processes consumes more ram.** Read further on for an explanation on RAM use.
+	
+		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 
 		
 			#PBS -l walltime=10:00:00,nodes=1:ppn=10
 
-4. Run AddJunctionsToDatabase.py with --addGencode or --addGencodeWithFlanks to initally populate the database with gencode junctions. 
+3. Run AddJunctionsToDatabase.py with --addGencode or --addGencodeWithFlanks to initally populate the database with gencode junctions. 
 
 	```python3 AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=gencode.comprehensive.splice.junctions.txt```
 	
-5. Run SpliceJunctionDiscovery.py with --addBAM to populate the database with junctions and read counts from your samples.
+4. Run SpliceJunctionDiscovery.py with --addBAM to populate the database with junctions and read counts from your samples.
 
 	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list```
 	
-6. Documentation on how to use FilterSpliceJunctions.py will be added later.
+5. Documentation on how to use FilterSpliceJunctions.py will be added later.
 
 ## Output
 
-SpliceJunctionDiscovery.py generates a folder for each bam. Within this folder are text files containing summarized read counts for junctions pertaining to a specific gene.
+SpliceJunctionDiscovery.py generates a folder for each bam. Within this folder are text files containing summarized read counts for junctions pertaining to a specific gene. You can delete these folders once all the information has been added to the database.
 
 By default the database is named SpliceJunction.db. There are 4 tables:
 
@@ -74,7 +100,8 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 ## Differences between MendelianRNA-seq-DB and Beryl Cumming's original MendelianRNA-seq
 
 - SpliceJunctionDiscovery has been rewritten in Python and parallelized - decreasing processing time by a factor proprotional to the number of worker processes
-- CIGAR string parsing is handled by a function called parseCIGARForIntrons() whereas before CIGAR strings were handled by piping through multiple bash tools
+- CIGAR string parsing is handled by a function called parseCIGARForIntrons() whereas before CIGAR strings were handled by piping through multiple bash tools. As a result of improper parsing using bash tools, junction start and/or stop positions were not reported properly (e.x. 1:100-200*1D30 represents an alignment that should really be 1:100-230 or 1:100-231)
+- Junction flanking in NormalizeSpliceJunctionValues.py has been fixed and now works. When flanking junctions were added to the set in the original make_annotated_junction_set(), individual characters in the string were added as opposed to the entire string itself (e.x. 1:100-200 gets added as '1', ':', '0', '2', '-')
 - All information produced by SpliceJunctionDiscovery is stored in a database instead of text files. This allows the user to utilize previously computed results instead of having to run the entire pipeline again when a new sample needs to be analyzed.
 - The database has some new fields that can be used to filter junctions: 
 	```
