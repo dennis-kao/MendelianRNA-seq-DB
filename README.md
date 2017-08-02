@@ -69,7 +69,7 @@ cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNE
 
 	```python3 AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=gencode.comprehensive.splice.junctions.txt```
 	
-4. Run SpliceJunctionDiscovery.py with --addBAM to populate the database with junctions and read counts from your samples.
+4. Run AddJunctionsToDatabase.py with --addBAM to populate the database with junctions and read counts from your samples.
 
 	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list```
 	
