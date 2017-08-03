@@ -61,17 +61,18 @@ cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNE
 	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine.
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
-
 		
 			#PBS -l walltime=10:00:00,nodes=1:ppn=10
 
-3. Run AddJunctionsToDatabase.py with --addGencode or --addGencodeWithFlanks to initally populate the database with gencode junctions. 
+3. Run AddJunctionsToDatabase.py with --addGencode to initally populate the database with gencode junctions. 
 
-	```python3 AddJunctionsToDatabase.py --addGencodeWithFlanks -transcript_model=gencode.comprehensive.splice.junctions.txt```
+	```python3 AddJunctionsToDatabase.py --addGencode -transcript_model=gencode.comprehensive.splice.junctions.txt```
 	
 4. Run AddJunctionsToDatabase.py with --addBAM to populate the database with junctions and read counts from your samples.
 
-	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list```
+	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list -flank=1```
+
+	-flank is a parameter which enables flanking for gencode annotation. If a gencode junction was 1:100-300 and a junction in a sample was 1:99-299, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of the gencode junction.
 	
 5. Documentation on how to use FilterSpliceJunctions.py will be added later.
 

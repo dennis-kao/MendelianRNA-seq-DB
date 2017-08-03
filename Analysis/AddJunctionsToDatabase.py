@@ -103,19 +103,20 @@ def getJunctionID(cur, chrom, start, stop, flank):
 				chromosome is ? and
 				start >= ? and
 				start <= ? and
-				stop is >= ? and
-				stop is <= ?;''', (chrom, (start - flank), (start + flank), (stop - flank), (stop + flank)) )
+				stop >= ? and
+				stop <= ?;''', (chrom, (start - flank), (start + flank), (stop - flank), (stop + flank)) )
 			isBothAnnotated = cur.fetchone()
 
 			if not isBothAnnotated:
 				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
-					chromosome is ? and
+					chromosome = ? and
 					start >= ? and
 					start <= ?;''', (chrom, (start - flank), (start + flank)) )
 				isStartAnnotated = cur.fetchone()
 
 				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
-					chromosome >= ? and
+					chromosome = ? and
+					stop >= ? and
 					stop <= ?;''', (chrom, (stop - flank), (stop + flank)))
 				isStopAnnotated = cur.fetchone()
 
@@ -139,7 +140,7 @@ def getJunctionID(cur, chrom, start, stop, flank):
 
 		if isBothAnnotated:
 			annotation = 3 # both annotated
-		if isStopAnnotated and isStartAnnotated:
+		elif isStopAnnotated and isStartAnnotated:
 			annotation = 4 # exon skipping
 		elif isStopAnnotated:
 			annotation = 2 # only stop
@@ -265,7 +266,7 @@ def summarizeGeneFile(poolArguement):
 			chrom, start, stop = junction
 			reads = spliceDict[junction]
 
-			junction_id, annotation = getJunctionID(cur, chrom, start, stop, flank)
+			junction_id, annotation = getJunctionID(cur, chrom, int(start), int(stop), flank)
 
 			try:
 				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
@@ -391,14 +392,15 @@ def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
 	cur.execute('''insert or ignore into TRANSCRIPT_MODEL_JUNCTIONS (chromosome, start, stop) values (?, ?, ?);''', (chrom, start, stop))
 
-	try:
-		cur.execute('''insert into JUNCTION_REF (chromosome, start, stop, gencode_annotation) values (?, ?, ?, ?);''', (chrom, start, stop, '3')) # 3 stands for both annotated
-		junction_id = cur.lastrowid
-	except sqlite3.IntegrityError:
-		cur.execute('''select ROWID from JUNCTION_REF where chromosome = ? and start = ? and stop = ?;''', (chrom, start, stop))
-		junction_id = cur.fetchone()[0]
+	# block below adds the gencode junction to the JUNCTION_REF table. This was required before TRANSCRIPT_MODEL_JUNCTIONS table was made. Not useful now, would just slow down database if turned on.
+	# try:
+	# 	cur.execute('''insert into JUNCTION_REF (chromosome, start, stop, gencode_annotation) values (?, ?, ?, ?);''', (chrom, start, stop, '3')) # 3 stands for both annotated
+	# 	junction_id = cur.lastrowid
+	# except sqlite3.IntegrityError:
+	# 	cur.execute('''select ROWID from JUNCTION_REF where chromosome = ? and start = ? and stop = ?;''', (chrom, start, stop))
+	# 	junction_id = cur.fetchone()[0]
 
-	annotateJunctionWithGene(gene, junction_id, cur)
+	# annotateJunctionWithGene(gene, junction_id, cur)
 
 def storeTranscriptModelJunctions(gencode_file):
 
