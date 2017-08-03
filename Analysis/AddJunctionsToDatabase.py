@@ -29,7 +29,7 @@ def initializeDB():
 
 	conn, cur = connectToDB()
 
-	cur.execute('''PRAGMA journal_mode=WAL;''')
+	cur.execute('''PRAGMA journal_mode = WAL;''') # WAL - write ahead logging - allows reading while writing. Needed for concurrency
 	cur.execute('''PRAGMA foreign_keys = ON;''')
 
 	cur.execute('''create table if not exists SAMPLE_REF (
@@ -81,7 +81,7 @@ def initializeDB():
 
 	commitAndClose(conn)
 
-def getJunctionID(cur, chrom, start, stop):
+def getJunctionID(cur, chrom, start, stop, flank):
 
 	# gencode_annotation = {0, 1, 2, 3, 4}
 	# none, only start, only stop, both, exon skipping
@@ -97,17 +97,48 @@ def getJunctionID(cur, chrom, start, stop):
 	if res:
 		ROWID, annotation = res
 	else: # if no such junction determine annotation of new junction: novel junction, only one annotated or a case of exon skipping?
-		
-		cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
-			chromosome is ? and
-			start is ?;''', (chrom, start))
-		isStartAnnotated = cur.fetchone()
 
-		cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
-			chromosome is ? and
-			stop is ?;''', (chrom, stop))
-		isStopAnnotated = cur.fetchone()
+		if flank > 0:
+			cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+				chromosome is ? and
+				start >= ? and
+				start <= ? and
+				stop is >= ? and
+				stop is <= ?;''', (chrom, (start - flank), (start + flank), (stop - flank), (stop + flank)) )
+			isBothAnnotated = cur.fetchone()
 
+			if not isBothAnnotated:
+				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+					chromosome is ? and
+					start >= ? and
+					start <= ?;''', (chrom, (start - flank), (start + flank)) )
+				isStartAnnotated = cur.fetchone()
+
+				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+					chromosome >= ? and
+					stop <= ?;''', (chrom, (stop - flank), (stop + flank)))
+				isStopAnnotated = cur.fetchone()
+
+		else:
+			cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+				chromosome = ? and
+				start = ?
+				stop is = ?;''', (chrom, start, stop) )
+			isBothAnnotated = cur.fetchone()
+
+			if not isBothAnnotated:
+				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+					chromosome = ? and
+					start = ?;''', (chrom, start))
+				isStartAnnotated = cur.fetchone()
+
+				cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 
+					chromosome = ? and
+					stop = ?;''', (chrom, stop))
+				isStopAnnotated = cur.fetchone()
+
+		if isBothAnnotated:
+			annotation = 3 # both annotated
 		if isStopAnnotated and isStartAnnotated:
 			annotation = 4 # exon skipping
 		elif isStopAnnotated:
@@ -168,6 +199,7 @@ def normalizeReadCount(spliceDict, junction, annotation, annotated_counts):
 		startString = makeStartString(chrom, start)
 		stopString = makeStopString(chrom, stop)				
 
+		# use the bigger read count for normalization
 		if annotated_counts[startString] > annotated_counts[stopString]:
 			key = startString
 		else:
@@ -210,7 +242,7 @@ def get_annotated_counts(spliceDict):
 
 def summarizeGeneFile(poolArguement):
 
-	bamList, gene = poolArguement
+	bamList, gene, flank = poolArguement
 	conn, cur = connectToDB()
 
 	print ('processing ' + gene)
@@ -233,7 +265,7 @@ def summarizeGeneFile(poolArguement):
 			chrom, start, stop = junction
 			reads = spliceDict[junction]
 
-			junction_id, annotation = getJunctionID(cur, chrom, start, stop)
+			junction_id, annotation = getJunctionID(cur, chrom, start, stop, flank)
 
 			try:
 				norm_read_count = normalizeReadCount(spliceDict, junction, annotation, annotated_counts)
@@ -306,10 +338,11 @@ def makeLockGlobal(poolLock):
 	global lock
 	lock = poolLock
 
-def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_list):
+def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_list, flank):
 
 	conn, cur = connectToDB()
 
+	flank = int(flank)
 	bamList = []
 	poolArguements = []
 	gene_set = set()
@@ -340,7 +373,7 @@ def parallel_process_gene_files(num_processes, bam_files, gencode_file, gene_lis
 			gene_set.add(gene)
 
 	for gene in gene_set:
-		poolArguements.append((bamList, gene))
+		poolArguements.append((bamList, gene, flank))
 
 	print ("Creating a pool with " + str(num_processes) + " processes")
 	pool = multiprocessing.Pool(initializer=makeLockGlobal, initargs=(poolLock, ), processes=int(num_processes))
@@ -367,7 +400,7 @@ def addTranscriptModelJunction(chrom, start, stop, gene, cur):
 
 	annotateJunctionWithGene(gene, junction_id, cur)
 
-def storeTranscriptModelJunctions(gencode_file, enableFlanking):
+def storeTranscriptModelJunctions(gencode_file):
 
 	conn, cur = connectToDB()
 
@@ -381,29 +414,7 @@ def storeTranscriptModelJunctions(gencode_file, enableFlanking):
 			start = int(start)
 			stop = int(stop)
 
-			if enableFlanking:
-
-				# shifts the junction while maintaining the same distance between start and stop
-				for offset in range(-1,2):
-					startFlank = start + offset
-					stopFlank = stop + offset
-					addTranscriptModelJunction(chrom, startFlank, stopFlank, gene, cur)
-
-				# helps to reduce exon skipping false positives at the cost of more transcript_model junctions
-				# generate junctions with the most extreme flanking regions of start and stop
-				addTranscriptModelJunction(chrom, (start + 1), (stop - 1), gene, cur)
-				addTranscriptModelJunction(chrom, (start - 1), (stop + 1), gene, cur)
-
-				# generate junctions with a 1 off start or stop
-				# fixed start
-				addTranscriptModelJunction(chrom, start, (stop - 1), gene, cur)
-				addTranscriptModelJunction(chrom, start, (stop + 1), gene, cur)
-				# fixed stop
-				addTranscriptModelJunction(chrom, (start - 1), stop, gene, cur)
-				addTranscriptModelJunction(chrom, (start + 1), stop, gene, cur)
-
-			else:
-				addTranscriptModelJunction(chrom, start, stop, gene, cur)
+			addTranscriptModelJunction(chrom, start, stop, gene, cur)
 
 			if commitFreq % 500 == 0: #	yes this works
 				conn.commit()
@@ -421,10 +432,10 @@ if __name__=="__main__":
 	parser.add_argument('-processes',help='Number of worker processes to parse gene files, default=10.',default=10)
 	parser.add_argument('-bamlist',help='A text file containing the names of bam files you want to discover splice junctions in each on a seperate line, default=bamlist.list',default='bamlist.list')
 	parser.add_argument('-gene_list',help='A text file containing the names of all the genes you want to investigate, default=gene_list.txt',default='gene_list.txt')
+	parser.add_argument('-flank',help='Add a +/- flanking region for gencode annotation. Specify 0 if you don\'t want to use this feature, default=1',default=1)
 	# parser.add_argument('-db',help='The name of the database you are storing junction information in, default=SpliceJunction.db',default='SpliceJunction.db')
 	mode_arguments = parser.add_mutually_exclusive_group(required=True)
 	mode_arguments.add_argument('--addGencode',action='store_true',help='Populate the database with gencode junctions, this step needs to be done once before anything else')
-	mode_arguments.add_argument('--addGencodeWithFlanks',action='store_true',help='Populate the database with gencode junctions with a +/- 1 nucleotide range, this step needs to be done once before anything else')
 	mode_arguments.add_argument('--addBAM',action='store_true',help='Add junction information from bamfiles found in the file bamlist.list')
 	args=parser.parse_args()
 
@@ -436,12 +447,9 @@ if __name__=="__main__":
 
 	if args.addGencode:
 		print ('Storing junctions from the transcript model file ' + args.transcript_model)
-		storeTranscriptModelJunctions(args.transcript_model, False)
-	elif args.addGencodeWithFlanks:
-		print ('Storing junctions with +/- 1 flanks from the transcript model file ' + args.transcript_model)
-		storeTranscriptModelJunctions(args.transcript_model, True)
+		storeTranscriptModelJunctions(args.transcript_model)
 	elif args.addBAM:
 		print ('Storing junctions from bam files found in the file ' + args.bamlist)
-		parallel_process_gene_files(args.processes, args.bamlist, args.transcript_model, args.gene_list)
+		parallel_process_gene_files(args.processes, args.bamlist, args.transcript_model, args.gene_list, args.flank)
 
 	print ('SpliceJunctionSummary.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))

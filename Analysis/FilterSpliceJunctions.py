@@ -24,7 +24,7 @@ def tableHeader():
 	return '\t'.join(header)
 
 def countGTEX(cur):
-	cur.execute('select count(*) from SAMPLE_REF where type = 0;')
+	cur.execute('select count(*) from SAMPLE_REF where type = 0;') # 0 = GTEX, 1 = PATIENT
 
 	num_gtex = cur.fetchone()[0]
 
@@ -54,26 +54,26 @@ def sampleSpecificJunctions(cur, sample, min_read):
 	output = '_'.join([sample, 'rc' + str(min_read), 'specific', 'n_gtex_' + count])
 
 	cur.execute('''select 
-	gene_ref.gene,
-	junction_ref.chromosome,
-	junction_ref.start,
-	junction_ref.stop,
-	junction_ref.gencode_annotation,
-	junction_counts.read_count,
-	junction_counts.norm_read_count,
-	junction_ref.n_patients_seen,
-	junction_ref.n_gtex_seen,
-	junction_ref.total_read_count,
-	junction_ref.total_patient_read_count
-	from 
-	sample_ref inner join junction_counts on junction_counts.bam_id = sample_ref.rowid
-	inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-	left join gene_ref on junction_ref.rowid = gene_ref.junction_id
-	where
-	sample_ref.sample_name = ? and
-	junction_counts.read_count >= ? and
-	junction_ref.n_gtex_seen <= ?;''',
-	(sample, min_read, 0))
+		gene_ref.gene,
+		junction_ref.chromosome,
+		junction_ref.start,
+		junction_ref.stop,
+		junction_ref.gencode_annotation,
+		junction_counts.read_count,
+		junction_counts.norm_read_count,
+		junction_ref.n_patients_seen,
+		junction_ref.n_gtex_seen,
+		junction_ref.total_read_count,
+		junction_ref.total_patient_read_count
+		from 
+		sample_ref inner join junction_counts on junction_counts.bam_id = sample_ref.rowid
+		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
+		left join gene_ref on junction_ref.rowid = gene_ref.junction_id
+		where
+		sample_ref.sample_name = ? and
+		junction_counts.read_count >= ? and
+		junction_ref.n_gtex_seen <= ?;''',
+		(sample, min_read, 0))
 
 	writeToFile(cur.fetchall(), output)
 
@@ -87,6 +87,12 @@ def customQuery(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
 
 	if not min_read:
 		min_read = 0
+
+	# if not min_n_patients_seen:
+	# 	min_n_patients_seen = 0
+
+	# if not min_total_patient_reads:
+	# 	min_total_patient_reads = 0
 
 	output = '_'.join([str(sample), ('rc' + str(min_read)), ('maxGTEX' + str(max_n_gtex_seen)), ('maxGTEXrc' + str(max_total_gtex_reads))])
 

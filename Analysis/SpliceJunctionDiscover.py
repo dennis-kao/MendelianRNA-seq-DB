@@ -123,7 +123,7 @@ def intronDiscovery(poolArguement):
 def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 	cwd = os.getcwd()
-	numProcesses = str(numProcesses) #handles ambigious Python behaviour: when set to default processes is an int, when specified as parameter processes is a string
+	numProcesses = str(numProcesses) #when set to default, processes is an int, when specified as parameter processes is a string
 
 	bamFiles = []
 	poolArguements = []
