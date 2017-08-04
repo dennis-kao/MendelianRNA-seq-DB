@@ -5,30 +5,20 @@ import sys
 import sqlite3
 from AddJunctionsToDatabase import connectToDB, commitAndClose
 
-def translateAnnotation(annotation):
-
-	if annotation == 0:
-		return 'NONE'
-	elif annotation == 1:
-		return 'START'
-	elif annotation == 2:
-		return 'STOP'
-	elif annotation == 3:
-		return 'BOTH'
-	elif annotation == 4:
-		return 'EXON_SKIP'
-
 def tableHeader():
-	header = ['gene', 'chromosome', 'start', 'stop', 'annotation', 'read_count', 'norm_read_count', 'n_patients_seen', 'n_gtex_seen', 'total_read_count', 'total_patient_read_count']
+	header = ['gene', 'chromosome:start-stop', 'annotation', 'n_gtex_seen', 'n_patients_seen', 'total_patient_read_count', 'total_gtex_read_count', 'total_read_count', 'sample:read_count', 'sample:norm_read_count']
 
 	return '\t'.join(header)
 
 def countGTEX(cur):
 	cur.execute('select count(*) from SAMPLE_REF where type = 0;') # 0 = GTEX, 1 = PATIENT
 
-	num_gtex = cur.fetchone()[0]
+	return cur.fetchone()[0]
 
-	return num_gtex
+def countPatients(cur):
+	cur.execute('select count(*) from SAMPLE_REF where type = 1;') # 0 = GTEX, 1 = PATIENT
+
+	return cur.fetchone()[0]
 
 def writeToFile(res, file):
 	with open(file, "w") as out:
@@ -36,48 +26,45 @@ def writeToFile(res, file):
 		out.write(tableHeader())
 
 		for row in res:
-
-			line = []
-
-			for i, element in enumerate(row):
-				if i == 4:
-					line.append(translateAnnotation(element))
-				else:
-					line.append(str(element))
-
-			out.write('\t'.join(line) + '\n')
+			out.write('\t'.join(str(element) for element in row) + '\n')
 
 def sampleSpecificJunctions(cur, sample, min_read):
 
 	count = str(countGTEX(cur))
 
-	output = '_'.join([sample, 'rc' + str(min_read), 'specific', 'n_gtex_' + count])
+	output = '_'.join([sample, 'specific', 'rc' + str(min_read), 'n_gtex_' + count])
 
-	cur.execute('''select 
-		gene_ref.gene,
-		junction_ref.chromosome,
-		junction_ref.start,
-		junction_ref.stop,
-		junction_ref.gencode_annotation,
-		junction_counts.read_count,
-		junction_counts.norm_read_count,
+	cur.execute('''select gene_ref.gene,
+		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
+		case 
+			when junction_ref.gencode_annotation = 0 then 'NONE'
+			when junction_ref.gencode_annotation = 1 then 'START'
+			when junction_ref.gencode_annotation = 2 then 'STOP'
+			when junction_ref.gencode_annotation = 3 then 'BOTH'
+			when junction_ref.gencode_annotation = 4 then 'EXON_SKIP'
+		END as annotation, 
+		junction_ref.n_gtex_seen, 
 		junction_ref.n_patients_seen,
-		junction_ref.n_gtex_seen,
+		junction_ref.total_patient_read_count,
+		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		junction_ref.total_patient_read_count
+		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
 		from 
-		sample_ref inner join junction_counts on junction_counts.bam_id = sample_ref.rowid
+		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		left join gene_ref on junction_ref.rowid = gene_ref.junction_id
+		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
 		where
 		sample_ref.sample_name = ? and
 		junction_counts.read_count >= ? and
-		junction_ref.n_gtex_seen <= ?;''',
+		junction_ref.n_gtex_seen <= ?
+		group by 
+		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''',
 		(sample, min_read, 0))
 
 	writeToFile(cur.fetchall(), output)
 
-def customQuery(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
+def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
 
 	if not max_n_gtex_seen:
 		max_n_gtex_seen = 0
@@ -88,35 +75,35 @@ def customQuery(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
 	if not min_read:
 		min_read = 0
 
-	# if not min_n_patients_seen:
-	# 	min_n_patients_seen = 0
-
-	# if not min_total_patient_reads:
-	# 	min_total_patient_reads = 0
-
 	output = '_'.join([str(sample), ('rc' + str(min_read)), ('maxGTEX' + str(max_n_gtex_seen)), ('maxGTEXrc' + str(max_total_gtex_reads))])
 
-	cur.execute('''select 
-		gene_ref.gene,
-		junction_ref.chromosome,
-		junction_ref.start,
-		junction_ref.stop,
-		junction_ref.gencode_annotation,
-		junction_counts.read_count,
-		junction_counts.norm_read_count,
+	cur.execute('''select gene_ref.gene,
+		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
+		case 
+			when junction_ref.gencode_annotation = 0 then 'NONE'
+			when junction_ref.gencode_annotation = 1 then 'START'
+			when junction_ref.gencode_annotation = 2 then 'STOP'
+			when junction_ref.gencode_annotation = 3 then 'BOTH'
+			when junction_ref.gencode_annotation = 4 then 'EXON_SKIP'
+		END as annotation, 
+		junction_ref.n_gtex_seen, 
 		junction_ref.n_patients_seen,
-		junction_ref.n_gtex_seen,
+		junction_ref.total_patient_read_count,
+		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		junction_ref.total_patient_read_count
+		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
 		from 
-		sample_ref inner join junction_counts on junction_counts.bam_id = sample_ref.rowid
+		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		left join gene_ref on junction_ref.rowid = gene_ref.junction_id
+		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
 		where
 		sample_ref.sample_name = ? and
 		junction_counts.read_count >= ? and
 		junction_ref.n_gtex_seen <= ? and
-		junction_ref.total_gtex_reads <= ?;''',
+		junction_ref.total_gtex_read_count <= ?
+		group by 
+		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''',
 		(sample, min_read, max_n_gtex_seen, max_total_gtex_reads))
 
 	writeToFile(cur.fetchall(), output)
@@ -162,6 +149,46 @@ def printSamplesInDB(cur):
 	for line in cur.fetchall():
 		print (line)
 
+def makeSampleDict(cur):
+
+	sampleDict = {}
+
+	cur.execute('''select ROWID, sample from SAMPLE_REF;''')
+
+	for bam_id, sample in cur.fetchall():
+		sampleDict[bam_id] = sample
+
+	return sampleDict
+
+def printAllJunctions(cur):
+
+	output = 'all_junctions_n_gtex_' + str(countGTEX(cur)) + '_n_paitents_' + str(countPatients(cur))
+
+	cur.execute('''select gene_ref.gene,
+		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
+		case 
+			when junction_ref.gencode_annotation = 0 then 'NONE'
+			when junction_ref.gencode_annotation = 1 then 'START'
+			when junction_ref.gencode_annotation = 2 then 'STOP'
+			when junction_ref.gencode_annotation = 3 then 'BOTH'
+			when junction_ref.gencode_annotation = 4 then 'EXON_SKIP'
+		END as annotation, 
+		junction_ref.n_gtex_seen, 
+		junction_ref.n_patients_seen,
+		junction_ref.total_patient_read_count,
+		junction_ref.total_gtex_read_count,
+		junction_ref.total_read_count,
+		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		from 
+		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
+		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
+		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
+		group by 
+		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''')
+
+	writeToFile(cur.fetchall(), output)
+
 if __name__=="__main__":
 	
 	conn, cur = connectToDB()
@@ -176,14 +203,17 @@ if __name__=="__main__":
 	elif sys.argv[1] == '--sample':
 		sampleSpecificJunctions(cur, sys.argv[2], int(sys.argv[3]))
 	elif sys.argv[1] == '--custom':
-		customQuery(cur, sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+		customSampleSpecificJunctions(cur, sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 	elif sys.argv[1] == '--delete':
 		deleteSample(cur, sys.argv[2])
+	elif sys.argv[1] == '--all':
+		printAllJunctions(cur)
 	else:
 		print('Invalid option. Use one of the following:')
 		print('--printsamples')
 		print('--sample	[SAMPLE]	[MIN_READ]')
 		print('--custom [SAMPLE] [MIN_READ] [MAX_N_GTEX_SEEN] [MAX_TOTAL_GTEX_READS]')
 		print('--delete [SAMPLE]')
+		print('--all')
 
 	commitAndClose(conn)
