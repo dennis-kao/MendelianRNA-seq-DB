@@ -103,7 +103,6 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 	```
 - Junction annotation now discriminates between START and STOP instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking the reference transcript_model to see if the start and stop positions belong to different junctions.
 - Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated junction as the denominator whereas before only "BOTH" annotated junctions were used
-- From the gencode file, multipe junctions are generated from a single junction to increase the definition for what is considered to be "annotated". The start and stop position of each junction both have a +/- 1 tolerance. The different combinations of these values (i.e. junction = start + 1, stop + 1) can be been in the function storeTranscriptModelJunctions() of [AddJunctionsToDatabase.py](Analysis/AddJunctionsToDatabase.py). This likely introduces a larger number of false positives for reported EXON_SKIP events. There is an option to not use flanking at all (--addGencode). 
 
 ## Citations
 
@@ -119,3 +118,5 @@ A gene can encompass partial or whole regions of other genes. This edge case has
 
 	1. The mapping of a single junction to multiple genes has been done with the table GENE_REF
 	2. If the script encounters the same junction in a sample more than once, it will utilize the result with the highest read count for read count and normalized read count and will discard the other.
+
+A +/- flanking region is considered when annotating the start and stop positions of sample junctions to increase the number of annotated junctions. This value is specified by the -flank parameter (default 1). This likely introduces a larger number of false positives for reported EXON_SKIP events. There is an option to not use flanking at all (-flank 0). 
