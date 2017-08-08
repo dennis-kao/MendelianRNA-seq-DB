@@ -34,7 +34,7 @@ def sampleSpecificJunctions(cur, sample, min_read):
 
 	output = '_'.join([sample, 'specific', 'rc' + str(min_read), 'n_gtex_' + count])
 
-	cur.execute('''select gene_ref.gene,
+	cur.execute('''select group_concat(gene_ref.gene),
 		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
 		case 
 			when junction_ref.gencode_annotation = 0 then 'NONE'
@@ -48,12 +48,12 @@ def sampleSpecificJunctions(cur, sample, min_read):
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
+		inner join gene_ref on junction_ref.rowid = gene_ref.junction_id 
 		where
 		sample_ref.sample_name = ? and
 		junction_counts.read_count >= ? and
@@ -77,7 +77,7 @@ def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_to
 
 	output = '_'.join([str(sample), ('rc' + str(min_read)), ('maxGTEX' + str(max_n_gtex_seen)), ('maxGTEXrc' + str(max_total_gtex_reads))])
 
-	cur.execute('''select gene_ref.gene,
+	cur.execute('''select group_concat(gene_ref.gene),
 		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
 		case 
 			when junction_ref.gencode_annotation = 0 then 'NONE'
@@ -91,12 +91,12 @@ def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_to
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
+		inner join gene_ref on junction_ref.rowid = gene_ref.junction_id 
 		where
 		sample_ref.sample_name = ? and
 		junction_counts.read_count >= ? and
@@ -144,10 +144,15 @@ def deleteSample(cur, sample):
 	print ("Successfully deleted %s from database!" % sample)
 
 def printSamplesInDB(cur):
-	cur.execute('''select * from SAMPLE_REF;''')
+	cur.execute('''select sample_name,
+	case
+		when type = 0 then 'CONTROL'
+		when type = 1 then 'PATIENT'
+	END
+	from SAMPLE_REF;''')
 
 	for line in cur.fetchall():
-		print (line)
+		print('\t'.join(str(i) for i in line))
 
 def makeSampleDict(cur):
 
@@ -164,7 +169,7 @@ def printAllJunctions(cur):
 
 	output = 'all_junctions_n_gtex_' + str(countGTEX(cur)) + '_n_paitents_' + str(countPatients(cur))
 
-	cur.execute('''select gene_ref.gene,
+	cur.execute('''select group_concat(gene_ref.gene),
 		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
 		case 
 			when junction_ref.gencode_annotation = 0 then 'NONE'
@@ -178,12 +183,13 @@ def printAllJunctions(cur):
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
+		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		left join gene_ref on junction_ref.rowid = gene_ref.junction_id 
+		inner join gene_ref on junction_ref.rowid = gene_ref.junction_id
+		where junction_ref.total_read_count > 0
 		group by 
 		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''')
 
