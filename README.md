@@ -18,7 +18,7 @@ MendelianRNA-seq-DB was initially developed to help researchers discover splice 
 4. Priortize and analyze variants which pertain to regions in genes related to this disease
 5. Priortize and analyze variants whose intronic regions share only one splice site with that of a known healthy transcript model<sup>*</sup>
 
-<sup>*</sup>The most probable mutation event to affect a transcript is that which only alters one exon in an exon-intron-exon region. This event is denoted as 'START' or 'STOP' in the database. 
+<sup>*</sup>The most probable mutation event in an exon-intron-exon region is that which only alters one exon. This event is denoted as 'START' or 'STOP' in the database. 
 
 ## Pipeline details
 
@@ -30,7 +30,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or healthy .bams should have the phrase 'GTEX' in their file name. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
