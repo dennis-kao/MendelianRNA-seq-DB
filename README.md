@@ -4,11 +4,23 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
+MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
 
-The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that you only have to process each BAM once and analyzing a new sample means adding the sample to the database then querrying it.
+The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that analyzing a new sample only requires the user to process the sample once and query the results from a pre-existing database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
 
-## Pipeline
+## Script methodology and use
+
+MendelianRNA-seq-DB was initially developed to help researchers discover splice variants causitive for rare Mendelian diseases. The methodology is as follows:
+
+1. Generate 2 sets of splice sites from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
+2. Remove any shared splice sites from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
+3. Remove splice sites which have a low number of read counts and/or normalized read counts and thus can considered as noise
+4. Priortize and analyze variants which pertain to regions in genes related to this disease
+5. Priortize and analyze variants whose intronic regions share only one splice site with that of a known healthy transcript model<sup>*</sup>
+
+<sup>*</sup>The most probable mutation event to affect a transcript is that which only alters one exon in an exon-intron-exon region. This event is denoted as 'START' or 'STOP' in the database. 
+
+## Pipeline details
 
 SpliceJunctionDiscovery.py calls upon samtools to report the presence of splice sites in a list of regions of interest, summarizes their read counts, and writes this to a text file. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
 
@@ -25,9 +37,9 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	GENE	ENSG	STRAND	CHROM	START	STOP	GENE_TYPE
 	```
 	You can use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) for that, or convert an existing .bed file using this bash line:
-```
-cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> gene.list
-```
+	```
+	cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> gene.list
+	```
 3. bamlist.list - A file containing the names of all the bams you want to discover junctions in. The file should quite simply be:
 	
 	
@@ -40,7 +52,6 @@ cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNE
 	An easy way to generate this file would be to navigate to a directory containing the .bam files you want to use and running this line: ```ls *.bam | grep '' > bamlist.list```
 
 4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, one, both) and it's annotated normalization calculation. You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
-
 
 ## Steps
 
@@ -74,7 +85,7 @@ cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNE
 
 	-flank is a parameter which enables flanking for gencode annotation. If a gencode junction was 1:100-300 and a junction in a sample was 1:99-299, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of the gencode junction.
 	
-5. Documentation on how to use FilterSpliceJunctions.py will be added later.
+5. At this point your database has been populated with information 
 
 ## Output
 
@@ -86,6 +97,15 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 	2. JUNCTION_REF, a list of junctions and their frequency of appearances in samples
 	3. JUNCTION_COUNTS, read counts of junctions in a sample
 	4. GENE_REF, an annotation of junctions with genes, a single junction can map to multiple genes
+
+Using one of the options of FilterSpliceJunctions.py will produce a text file containing junction information in the following format:
+
+	gene	chromosome:start-stop	annotation	n_gtex_seen	n_patients_seen	total_patient_read_count	total_gtex_read_count	total_read_count	sample:read_count	sample:norm_read_count
+	MT-ND1	MT:3540-3610	NONE	0	1	11	0	11	PATIENT.bam:11	PATIENT.bam:NULL
+	AC002321.2	GL000201.1:4130-9415	NONE	1	1	32	4	36	PATIENT.bam:32	PATIENT.bam:NULL
+	MT-CO1	MT:7276-13822	NONE	1	1	5	1	6	PATIENT.bam:5	PATIENT.bam:NULL
+	MT-ATP6	MT:9234-9511	NONE	0	1	6	0	6	PATIENT.bam:6	PATIENT.bam:NULL
+	AC002321.2	GL000201.1:9511-14322	START	1	1	70	2	72	PATIENT.bam:70	PATIENT.bam:NULL
 
 ## Differences between MendelianRNA-seq-DB and Beryl Cumming's original MendelianRNA-seq
 
@@ -110,7 +130,7 @@ By default the database is named SpliceJunction.db. There are 4 tables:
 
 Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
 
-## Footnotes
+## Side notes
 
 The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
 
