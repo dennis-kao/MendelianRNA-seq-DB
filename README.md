@@ -85,7 +85,15 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 	-flank is a parameter which enables flanking for gencode annotation. If a gencode junction was 1:100-300 and a junction in a sample was 1:99-299, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of the gencode junction.
 	
-5. At this point your database has been populated with information 
+5. At this point your database (SpliceJunction.db) has been populated with junction information from your samples. Now you can use FilterSpliceJunction.py to output junction information.
+
+To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
+
+	```python3 FilterSpliceJunctions.py --sample SAMPLE_NAME MIN_READ_COUNT```
+	
+If you prefer to use awk and grep tools to filter splice sites and avoid writing your own database querries then use this to print out all junction information:
+
+	```python3 FilterSpliceJunctions.py --all```
 
 ## Output
 
