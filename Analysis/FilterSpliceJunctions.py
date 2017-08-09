@@ -8,7 +8,7 @@ from AddJunctionsToDatabase import connectToDB, commitAndClose
 def tableHeader():
 	header = ['gene', 'chromosome:start-stop', 'annotation', 'n_gtex_seen', 'n_patients_seen', 'total_patient_read_count', 'total_gtex_read_count', 'total_read_count', 'sample:read_count', 'sample:norm_read_count']
 
-	return '\t'.join(header)
+	return ('\t'.join(header) + '\n')
 
 def countGTEX(cur):
 	cur.execute('select count(*) from SAMPLE_REF where type = 0;') # 0 = GTEX, 1 = PATIENT
@@ -48,8 +48,8 @@ def sampleSpecificJunctions(cur, sample, min_read):
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct junction_counts.read_count||':'||sample_ref.sample_name),
+		group_concat(distinct junction_counts.norm_read_count||':'||sample_ref.sample_name)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
@@ -91,8 +91,8 @@ def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_to
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct junction_counts.read_count||':'||sample_ref.sample_name),
+		group_concat(distinct junction_counts.norm_read_count||':'||sample_ref.sample_name)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
@@ -183,8 +183,8 @@ def printAllJunctions(cur):
 		junction_ref.total_patient_read_count,
 		junction_ref.total_gtex_read_count,
 		junction_ref.total_read_count,
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.read_count),
-		group_concat(distinct sample_ref.sample_name||':'||junction_counts.norm_read_count)
+		group_concat(distinct junction_counts.read_count||':'||sample_ref.sample_name),
+		group_concat(distinct junction_counts.norm_read_count||':'||sample_ref.sample_name)
 		from 
 		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
 		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
