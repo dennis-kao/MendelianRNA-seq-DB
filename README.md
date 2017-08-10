@@ -4,17 +4,17 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover splice sites in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
+MendelianRNA-seq-DB is a tool to discover splice variants in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
 
 The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that analyzing a new sample only requires the user to process the sample once and query the results from a pre-existing database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
 
-## Script methodology and use
+## Script methodology
 
 MendelianRNA-seq-DB was initially developed to help researchers discover splice variants causitive for rare Mendelian diseases. The methodology is as follows:
 
 1. Generate 2 sets of splice sites from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
 2. Remove any shared splice sites from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
-3. Remove splice sites which have a low number of read counts and/or normalized read counts and thus can considered as noise
+3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
 4. Priortize and analyze variants which pertain to regions in genes related to this disease
 5. Priortize and analyze variants whose intronic regions share only one splice site with that of a known healthy transcript model<sup>*</sup>
 
@@ -30,7 +30,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or healthy .bams should have the phrase 'GTEX' in their file name. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams should have the phrase 'GTEX' in their file name. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
@@ -69,7 +69,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	Parameters:
 	1. transcriptFile, path to file #2
 	2. bamList, path to file #3
-	3. processes, the number of worker processes running in the background calling samtools. This the slowest step in the program. This number should be equal to or less than the number of cores on your machine.
+	3. processes, the number of worker processes running in the background calling samtools.This number should be equal to or less than the number of cores on your machine.
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 		
@@ -81,17 +81,19 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	
 4. Run AddJunctionsToDatabase.py with --addBAM to populate the database with junctions and read counts from your samples.
 
-	```python3 AddJunctionsToDatabase.py --addBAM -gene_list=kidney.glomerular.genes.list -processes=4 -bamlist=bamlist.list -flank=1```
+	```python3 AddJunctionsToDatabase.py --addBAM -transcript_file=all-protein-coding-genes-no-patches.txt -processes=4 -bamlist=bamlist.list -flank=1```
 
 	-flank is a parameter which enables flanking for gencode annotation. If a gencode junction was 1:100-300 and a junction in a sample was 1:99-299, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of the gencode junction.
-	
+
 5. At this point your database (SpliceJunction.db) has been populated with junction information from your samples. Now you can use FilterSpliceJunction.py to output junction information.
 
-To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
+	To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
 
 	```python3 FilterSpliceJunctions.py --sample SAMPLE_NAME MIN_READ_COUNT```
 	
-If you prefer to use awk and grep tools to filter splice sites and avoid writing your own database querries then use this to print out all junction information:
+	It should be noted that 
+
+	If you prefer to use awk and grep tools to filter splice sites and/or avoid writing your own database querries to perform more complex filters then use this to print out all junction information:
 
 	```python3 FilterSpliceJunctions.py --all```
 
@@ -129,8 +131,8 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 	total_patient_read_count
 	total_gtex_read_count
 	```
-- Junction annotation now discriminates between START and STOP instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking the reference transcript_model to see if the start and stop positions belong to different junctions.
-- Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated junction as the denominator whereas before only "BOTH" annotated junctions were used
+- Junction annotation now discriminates between START and STOP instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions.
+- Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated splice site as the denominator whereas before only "BOTH" annotated junctions were used
 
 ## Citations
 
@@ -138,7 +140,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 
 Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
 
-## Side notes
+## Footnotes
 
 The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
 
@@ -147,4 +149,4 @@ A gene can encompass partial or whole regions of other genes. This edge case has
 	1. The mapping of a single junction to multiple genes has been done with the table GENE_REF
 	2. If the script encounters the same junction in a sample more than once, it will utilize the result with the highest read count for read count and normalized read count and will discard the other.
 
-A +/- flanking region is considered when annotating the start and stop positions of sample junctions to increase the number of annotated junctions. This value is specified by the -flank parameter (default 1). This likely introduces a larger number of false positives for reported EXON_SKIP events. There is an option to not use flanking at all (-flank 0). 
+A +/- flanking region is considered when annotating the 5' and 3' positions of sample junctions to increase the number of annotated junctions. This value is specified by the -flank parameter (default 1). There is an option to not use flanking at all (-flank 0).
