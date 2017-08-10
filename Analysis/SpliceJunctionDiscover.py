@@ -8,17 +8,51 @@ from subprocess import Popen, PIPE
 from cigar import Cigar
 from datetime import datetime
 
-# run() was taken from Andy and modified:
-# http://jura.wi.mit.edu/bio/education/hot_topics/python_pipelines_2014/python_pipelines_2014.pdf
-# https://stackoverflow.com/questions/13398261/python-subprocess-call-and-subprocess-popen-stdout
 def run(cmd, dieOnError=True):
+
+	"""
+	Runs a single subprocess in the background. Used to execute simple bash commands like cat *.txt
+
+	run() was taken from Andy and modified:
+	http://jura.wi.mit.edu/bio/education/hot_topics/python_pipelines_2014/python_pipelines_2014.pdf
+	https://stackoverflow.com/questions/13398261/python-subprocess-call-and-subprocess-popen-stdout
+
+	Args:
+		cmd, the terminal command to run
+		dieOnError, used to detect errors
+
+	Returns:
+	    (exitcode, stdout, stderr), tuple containing the results of the subprocess' execution
+
+	Raises:
+	    None
+	"""
+
 	ps = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 	exitcode = ps.returncode
 	stdout,stderr = ps.communicate()
 	return (exitcode, stdout, stderr)
 
-# Beryl Cummings' code, modified slightly
+
 def printSplices(path, spliceDict):
+
+	"""
+	Prints junctions and their read counts to a specified file
+
+	This is a striped down version of Beryl Cummings' printSplices()
+
+	Args:
+		path, the path to the output file
+		spliceDict, a dictionary containing junctions and their read counts
+			E.x. spliceDict[1:200-300] = 5
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
 	for key in spliceDict:
 		chrom, junctionStart, junctionEnd = key
 		timesSeenInSample = str(spliceDict[key])
@@ -26,8 +60,31 @@ def printSplices(path, spliceDict):
 		with open(path, "a") as out:
 			out.write("\t".join([str(chrom),str(junctionStart),str(junctionEnd),timesSeenInSample])+"\n")
 
-# e.x. cigar='3M1D40M20N'
 def parseCIGARForIntrons(cigar):
+
+	"""
+	Parses a CIGAR string and returns values which can used to determine an intron's
+	3' and 5' splice sites
+
+	Args:
+		cigar, a CIGAR string with an intron in it
+			E.x. cigar='3M1D40M20N'
+
+	Returns:
+	    offset, a figure which accomodates for insertion and deletion events to adjust
+	    an alignment's positions back to the reference genome
+
+	    matchedExon, a figure to be added to the start position of an alignment which
+	    forms the 5' end of a splice site. This function only considers 'M''s before 
+	    an intron (N) for this figure.
+
+		intronLength, the length of an intron as reported by the CIGAR string. This figure
+		is added with matchedExon and the start of an alignment to produce the position of
+		the 3' end of a splice site.
+
+	Raises:
+	    None
+	"""
 
 	if 'N' in cigar:
 		cigar = cigar.split('N')[0] + 'N' #remove all information after intron
@@ -54,7 +111,35 @@ def parseCIGARForIntrons(cigar):
 
 def intronDiscovery(poolArguement):
 
-	bamFiles, gene, gene_type, chrom, start, stop, cwd = poolArguement
+	"""
+	The function a worker process goes through. Produces a file containing junction
+	positions and their read counts for each gene:
+
+		E.x. NPHS1.txt
+			1	200	300	5
+			1	344	355	2
+
+	Each worker is assigned a single gene region to work on. The worker loops through each BAM file,
+	counts the number of alignments and produces a single gene text file in the corresponding BAM folder. 
+
+	Args:
+		poolArguement, the single argument for each worker process, which can be broken down
+		in to these components:
+
+			bamFiles, a list of each bam file, this is used to access the corresponding sample folder
+			gene, the gene the worker must process
+			chrom, the chromosome the gene lies on
+			start and stop, the 3' and 5' locations on a chromosome in which samtools should begin looking for alignments in
+			cwd, path to the current working directory. This is used to create the path of a sample folder and a gene text file
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
+	bamFiles, gene, chrom, start, stop, cwd = poolArguement
 
 	print ('processing ' + gene)
 
@@ -120,18 +205,22 @@ def intronDiscovery(poolArguement):
 
 	print ('finished ' + gene)
 
-def processGenesInParallel(transcriptFile, bamList, numProcesses):
+def makeBamListAndDirectories(bamList):
 
-	cwd = os.getcwd()
-	numProcesses = str(numProcesses) #when set to default, processes is an int, when specified as parameter processes is a string
+	"""
+	Counts the number of GTEx samples in the database
+
+	Args:
+		cur, a cursor to a connection to a database
+
+	Returns:
+	    The number of GTEx files in the database
+
+	Raises:
+	    None
+	"""
 
 	bamFiles = []
-	poolArguements = []
-	sampleOutputDirectories = []
-
-	print ("Creating a pool with " + numProcesses + " processes")
-	pool = multiprocessing.Pool(int(numProcesses))
-	print ('pool: ' + str(pool))
 
 	with open(bamList) as bl:
 		for i in bl:
@@ -147,7 +236,27 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
 			os.system("mkdir " + outputDirectory)
 			bamFiles.append(i)
-			sampleOutputDirectories.append(outputDirectory)
+
+def processGenesInParallel(transcriptFile, bamList, numProcesses):
+
+	"""
+	Sets up the parameters for each worker process and then runs them.
+
+	Args:
+		transcriptFile, path to a file which contains a list of genes and locations of investigation
+		bamList, a list of bam files you want to discover splice sites in
+		numProcesses, the number of worker processes to run at a given time
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
+	cwd = os.getcwd()
+	bamFiles = makeBamListAndDirectories(bamList)
+	poolArguements = []
 
 	with open(transcriptFile) as tf:
 		for line in tf:
@@ -159,7 +268,11 @@ def processGenesInParallel(transcriptFile, bamList, numProcesses):
 				print ('Error while parsing transcript file named: ' + str(transcriptFile) + "\n" + 'Error message: ' + str(e) + "\nExiting.")
 				exit (3)
 
-			poolArguements.append((bamFiles, gene, gene_type, chrom, start, stop, cwd))
+			poolArguements.append((bamFiles, gene, chrom, start, stop, cwd))
+
+	print ("Creating a pool with " + str(numProcesses) + " processes")
+	pool = multiprocessing.Pool(int(numProcesses))
+	print ('pool: ' + str(pool))
 
 	pool.map(intronDiscovery, poolArguements) # run the worker processes
 	pool.close()

@@ -6,21 +6,78 @@ import sqlite3
 from AddJunctionsToDatabase import connectToDB, commitAndClose
 
 def tableHeader():
+
+	"""
+	Creates the header for output text files
+
+	Args:
+		None
+
+	Returns:
+	    A string containing tab delimited headers
+
+	Raises:
+	    None
+	"""
+
 	header = ['gene', 'chromosome:start-stop', 'annotation', 'n_gtex_seen', 'n_patients_seen', 'total_patient_read_count', 'total_gtex_read_count', 'total_read_count', 'sample:read_count', 'sample:norm_read_count']
 
 	return ('\t'.join(header) + '\n')
 
 def countGTEX(cur):
+
+	"""
+	Counts the number of GTEx samples in the database
+
+	Args:
+		cur, a cursor to a connection to a database
+
+	Returns:
+	    The number of GTEx files in the database
+
+	Raises:
+	    None
+	"""
+
 	cur.execute('select count(*) from SAMPLE_REF where type = 0;') # 0 = GTEX, 1 = PATIENT
 
 	return cur.fetchone()[0]
 
 def countPatients(cur):
+
+	"""
+	Counts the number of patient samples in the database
+
+	Args:
+		cur, a cursor to a connection to a database
+
+	Returns:
+	    The number of patient files in the database
+
+	Raises:
+	    None
+	"""
+
 	cur.execute('select count(*) from SAMPLE_REF where type = 1;') # 0 = GTEX, 1 = PATIENT
 
 	return cur.fetchone()[0]
 
 def writeToFile(res, file):
+
+	"""
+	Writes the results from a database query to a specified text file
+
+	Args:
+		res, the returned values from a cursor's fetchall() method
+		file, the path or name of a file to write to
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
 	with open(file, "w") as out:
 
 		out.write(tableHeader())
@@ -29,6 +86,34 @@ def writeToFile(res, file):
 			out.write('\t'.join(str(element) for element in row) + '\n')
 
 def sampleSpecificJunctions(cur, sample, min_read):
+
+	"""
+	Generates a file containing junctions which are seen in a sample and not seen in any
+	GTEx samples with a read count equal to or greater than the specified minimum read count. 
+
+	Note that this function does not discriminate against junctions seen in other patient samples.
+	Users should also note that the function does not work for GTEx samples as the database query
+	relies on n_gtex_seen being 0.
+
+	The query provides information about read counts of only the one specified sample
+	in the columns 'sample:read_count' and 'sample:norm_read_count', 
+
+		Ex. 1:100-200 PATIENT2:344
+
+	This occurs because we are joining on only one sample in the database as opposed
+	to all.
+
+	Args:
+		cur, a cursor to a connection to a database
+		sample, the name of the sample file you want to investigate, must include .bam extension
+		min_read, the minimum number of reads a junction must have 
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
 
 	count = str(countGTEX(cur))
 
@@ -65,6 +150,32 @@ def sampleSpecificJunctions(cur, sample, min_read):
 	writeToFile(cur.fetchall(), output)
 
 def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
+
+	"""
+	Generates a text file using a query in which you can discover junctions specific to a sample
+	with parameters for appearances in GTEx samples
+
+	The query provides information about read counts of only the one specified sample
+	in the columns 'sample:read_count' and 'sample:norm_read_count', 
+
+		Ex. 1:100-200 PATIENT2:344
+
+	This occurs because we are joining on only one sample in the database as opposed
+	to all.
+
+	Args:
+		cur, a cursor to a connection to a database
+		sample, the name of the sample file you want to investigate, must include .bam extension
+		min_read, the minimum number of reads a junction must have 
+		max_n_gtex_seen, the maximum number of gtex samples a junction can appear in
+		max_total_gtex_reads, the maximum total read count for a junction in GTEx samples
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
 
 	if not max_n_gtex_seen:
 		max_n_gtex_seen = 0
@@ -108,42 +219,21 @@ def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_to
 
 	writeToFile(cur.fetchall(), output)
 
-def deleteSample(cur, sample):
-
-	cur.execute('select ROWID, type from sample_ref where sample_name = ?;', (sample, ))
-	res = cur.fetchone()
-
-	if not res:
-		print ("Sample %s does not exist in the database!" % sample)
-		exit(1)
-	else:
-		bam_id, bam_type = res
-
-	cur.execute('select junction_id, read_count from JUNCTION_COUNTS where bam_id = ?;', (bam_id, ))
-
-	for junction_id, read_count in cur.fetchall():
-
-		if bam_type == 0:
-			cur.execute('''update JUNCTION_REF set 
-				n_gtex_seen = n_gtex_seen - 1,
-				total_read_count = total_read_count - ?,
-				total_gtex_read_count = total_gtex_read_count - ?
-				where ROWID = ?;''', (read_count, read_count, junction_id))
-		elif bam_type == 1:
-			cur.execute('''update JUNCTION_REF set 
-				n_patients_seen = n_patients_seen - 1,
-				total_read_count = total_read_count - ?,
-				total_patient_read_count = total_patient_read_count - ?
-				where ROWID = ?;''', (read_count, read_count, junction_id))
-		else:
-			raise Exception ('FATAL ERROR - bam_id is not 0 or 1')
-
-	cur.execute('''delete from JUNCTION_COUNTS where junction_id = ?;''', (junction_id, ))
-	cur.execute('''delete from SAMPLE_REF where sample_name = ?;''', (sample, ))
-
-	print ("Successfully deleted %s from database!" % sample)
-
 def printSamplesInDB(cur):
+
+	"""
+	Prints to stdout all samples in the database and their experiment type
+
+	Args:
+		cur, a cursor to a connection to a database
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
 	cur.execute('''select sample_name,
 	case
 		when type = 0 then 'CONTROL'
@@ -154,18 +244,28 @@ def printSamplesInDB(cur):
 	for line in cur.fetchall():
 		print('\t'.join(str(i) for i in line))
 
-def makeSampleDict(cur):
-
-	sampleDict = {}
-
-	cur.execute('''select ROWID, sample from SAMPLE_REF;''')
-
-	for bam_id, sample in cur.fetchall():
-		sampleDict[bam_id] = sample
-
-	return sampleDict
-
 def printAllJunctions(cur):
+
+	"""
+	Dumps all junction information seen in all samples to a text file.
+
+	The query provides information about read counts of a junction across all samples
+	unlike the other queries in the columns 'sample:read_count' and 'sample:norm_read_count', 
+
+		Ex. 1:100-200 GTEx1:20,GTEx3:211,PATIENT2:344
+
+	This occurs because we are joining and grouping all sample names in the database as opposed
+	to just one name.
+
+	Args:
+		cur, a cursor to a connection to a database
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
 
 	output = 'all_junctions_n_gtex_' + str(countGTEX(cur)) + '_n_paitents_' + str(countPatients(cur))
 
@@ -210,8 +310,6 @@ if __name__=="__main__":
 		sampleSpecificJunctions(cur, sys.argv[2], int(sys.argv[3]))
 	elif sys.argv[1] == '--custom':
 		customSampleSpecificJunctions(cur, sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-	elif sys.argv[1] == '--delete':
-		deleteSample(cur, sys.argv[2])
 	elif sys.argv[1] == '--all':
 		printAllJunctions(cur)
 	else:
@@ -219,7 +317,6 @@ if __name__=="__main__":
 		print('--printsamples')
 		print('--sample	[SAMPLE]	[MIN_READ]')
 		print('--custom [SAMPLE] [MIN_READ] [MAX_N_GTEX_SEEN] [MAX_TOTAL_GTEX_READS]')
-		print('--delete [SAMPLE]')
 		print('--all')
 
 	commitAndClose(conn)
