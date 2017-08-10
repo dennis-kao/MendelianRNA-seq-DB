@@ -140,7 +140,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 
 Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
 
-## Side notes
+## Footnotes
 
 The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
 
