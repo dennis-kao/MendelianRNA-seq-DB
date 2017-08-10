@@ -132,7 +132,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 	total_gtex_read_count
 	```
 - Junction annotation now discriminates between START and STOP instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions.
-- Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated junction as the denominator whereas before only "BOTH" annotated junctions were used
+- Normalization of annotated junctions now considers read counts from all junctions which have at least one annotated splice site as the denominator whereas before only "BOTH" annotated junctions were used
 
 ## Citations
 
