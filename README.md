@@ -4,13 +4,13 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover splice variants in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database while still supporting the parallel processing step.
+MendelianRNA-seq-DB is a tool to discover junctions in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database in addition to the parallel processing step.
 
-The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that analyzing a new sample only requires the user to process the sample once and query the results from a pre-existing database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
+The main benefit of using a database as opposed to text files is that sample bam files only have to be processed once. Analyzing a new sample does not require the user to re-run the pipeline on controls - instead, the user only needs to query the database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
 
 ## Diagnosis methodology
 
-MendelianRNA-seq-DB was initially developed to help researchers discover splice variants causitive for rare Mendelian diseases. The methodology is as follows:
+MendelianRNA-seq-DB was initially developed to help researchers discover splice junctions causitive for rare Mendelian diseases. The methodology is as follows:
 
 1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
 2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
@@ -22,7 +22,7 @@ MendelianRNA-seq-DB was initially developed to help researchers discover splice 
 
 ## Pipeline details
 
-SpliceJunctionDiscovery.py calls upon samtools to report the presence of splice sites in a list of regions of interest, summarizes their read counts, and writes this to a text file. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
+SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns in a list of regions of interest, summarizes their read counts, and writes this to a text file. AddJunctionsToDatabase.py reads this output, performs gencode annotations and normalization, and stores the information into a database. FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
 
 SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. 
 
@@ -30,7 +30,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams should have the phrase 'GTEX' in their file name. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
@@ -40,6 +40,8 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	```
 	cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> gene.list
 	```
+	There is an included file which contains [all protein coding regions](all-protein-coding-genes-no-patches.list).
+	
 3. bamlist.list - A file containing the names of all the bams you want to discover junctions in. The file should quite simply be:
 	
 	
@@ -141,8 +143,6 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
 
 ## Footnotes
-
-The included transcript_model file [_gencode.comprehensive.splice.junctions.txt_](https://github.com/dennis-kao/MendelianRNA-seq/blob/master/gencode.comprehensive.splice.junctions.txt) is based off of gencode v19.
 
 A gene can encompass partial or whole regions of other genes. This edge case has been accounted for in AddJunctionsToDatabase.py in two ways: 
 
