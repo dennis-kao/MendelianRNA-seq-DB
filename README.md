@@ -8,14 +8,14 @@ MendelianRNA-seq-DB is a tool to discover splice variants in a collection of BAM
 
 The main benefit of using a database is that results from previously processed .bam files can be reused. Practically, this means that analyzing a new sample only requires the user to process the sample once and query the results from a pre-existing database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
 
-## Script methodology
+## Diagnosis methodology
 
 MendelianRNA-seq-DB was initially developed to help researchers discover splice variants causitive for rare Mendelian diseases. The methodology is as follows:
 
-1. Generate 2 sets of splice sites from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
-2. Remove any shared splice sites from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
+1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
+2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
-4. Priortize and analyze variants which pertain to regions in genes related to this disease
+4. Priortize and analyze variants which pertain to regions in genes related to this disease or are consistent with the patient's phenotype
 5. Priortize and analyze variants whose intronic regions share only one splice site with that of a known healthy transcript model<sup>*</sup>
 
 <sup>*</sup>The most probable mutation event in an exon-intron-exon region is that which only alters one exon. This event is denoted as 'START' or 'STOP' in the database. 
