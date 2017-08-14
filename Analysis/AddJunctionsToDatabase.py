@@ -28,8 +28,6 @@ def connectToDB():
 	    None
 	"""
 
-	#timeout=10 is ok for a SSD, or PCI-E SSD
-	#timeout=80 for the HPF server and its slow disks :(
 	conn = sqlite3.connect('SpliceJunction.db', timeout=80)
 	cur = conn.cursor()
 
@@ -92,6 +90,9 @@ def initializeDB():
 
 	conn, cur = connectToDB()
 
+	# WAL mode is only present in SQLite versions 3.7.0 or above
+	# Make sure your sqlite3 Python library is based off of the same SQLite3 or higher!
+	# It is critical to having multiple writers and readers 
 	cur.execute('''PRAGMA journal_mode = WAL;''') # WAL - write ahead logging - allows reading while writing. Needed for concurrency
 	cur.execute('''PRAGMA foreign_keys = ON;''')
 
@@ -180,7 +181,9 @@ def getJunctionID(cur, chrom, start, stop, flank):
 
 	if res:
 		ROWID, annotation = res
-	else: # if no such junction determine annotation of new junction: novel junction, only one annotated or a case of exon skipping?
+
+	# if no such junction determine annotation of new junction: novel junction, only one annotated or a case of exon skipping?
+	else:
 
 		if flank > 0:
 			cur.execute('''select * from TRANSCRIPT_MODEL_JUNCTIONS where 

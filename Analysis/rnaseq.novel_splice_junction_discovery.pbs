@@ -3,10 +3,24 @@
 #PBS -l walltime=20:00:00,nodes=1:ppn=40
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=30g,mem=30g
+#PBS -l vmem=40g,mem=40g
 
 home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
 
-module load python/3.5.2
-python3 $home/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes
+if [ -z "$transcript_mode" ];
+then
+		transcript_model=$home/gencode.comprehensive.splice.junctions.txt
+fi
 
+if [ -z "$processes" ];
+then
+		processes=40
+fi
+
+if [ -z "$bam_list" ];
+then
+	bam_list=bamlist.list
+fi
+
+module load python/3.5.2
+python3 $home/Analysis/SpliceJunctionDiscovery.py -transcript_file=$transcriptFile -bam_list=$bamList -processes=$processes

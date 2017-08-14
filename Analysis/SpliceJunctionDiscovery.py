@@ -31,8 +31,7 @@ def run(cmd, dieOnError=True):
 	ps = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 	exitcode = ps.returncode
 	stdout,stderr = ps.communicate()
-	return (exitcode, stdout, stderr)
-
+	return exitcode, stdout, stderr
 
 def printSplices(path, spliceDict):
 
@@ -208,13 +207,15 @@ def intronDiscovery(poolArguement):
 def makeBamListAndDirectories(bamList):
 
 	"""
-	Counts the number of GTEx samples in the database
+	Makes a list of bam files for each worker process to use and
+	the directories in which each gene file will reside in
 
 	Args:
-		cur, a cursor to a connection to a database
+		bamList, text file containing the names of all .bam files
+		each on a seperate line
 
 	Returns:
-	    The number of GTEx files in the database
+	    bamFiles, a list of bamFiles to be processed
 
 	Raises:
 	    None
@@ -225,7 +226,7 @@ def makeBamListAndDirectories(bamList):
 	with open(bamList) as bl:
 		for i in bl:
 
-			i = i.rstrip("\n")
+			i = i.strip()
 
 			bamLocation = os.getcwd() + '/' + i
 			if not os.path.isfile(bamLocation):
@@ -236,6 +237,8 @@ def makeBamListAndDirectories(bamList):
 
 			os.system("mkdir " + outputDirectory)
 			bamFiles.append(i)
+
+	return bamFiles
 
 def processGenesInParallel(transcriptFile, bamList, numProcesses):
 
