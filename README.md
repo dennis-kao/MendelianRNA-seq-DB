@@ -55,6 +55,16 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, one, both) and it's annotated normalization calculation. You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
 
+5. [Python 3.5.2](https://www.python.org/downloads/) or higher
+
+6. Python [CIGAR string library](https://pypi.python.org/pypi/cigar/0.1.3) by Brent Pedersen
+
+7. sqlite3 Python library based off of SQLite3 version 3.11.0 or higher. You can check your library's version with:
+	```
+	import sqlite3
+	print (sqlite3.sqlite_version_info)
+	```
+	
 ## Steps
 
 1. Put bamlist.list, .bam files, .bai files in a new directory. Navigate to it. 
@@ -62,15 +72,15 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 2. For [Torque](http://www.adaptivecomputing.com/products/open-source/torque/) users there is a [PBS file](Analysis/rnaseq.novel_splice_junction_discovery.pbs) containing all the commands you need to run. Just change the "home" directory in the file to match where you placed the MendelianRNA-seq folder and run: 
 
-	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcriptFile=transcript_file,bamList=bamlist.list,processes=10```
+	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcript_file=transcript_file,bam_list=bamlist.list,processes=10```
 	
 	For non-Torque users, SpliceJunctionDiscovery can be run from terminal:
 	
-	```python3 MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcriptFile=$transcriptFile -bamList=$bamList -processes=$processes```
+	```python3 MendelianRNA-seq/Analysis/SpliceJunctionDiscovery.py -transcript_file=$transcript_file -bam_list=$bam_list -processes=$processes```
 	
 	Parameters:
-	1. transcriptFile, path to file #2
-	2. bamList, path to file #3
+	1. transcript_file, path to file #2
+	2. bam_list, path to file #3
 	3. processes, the number of worker processes running in the background calling samtools.This number should be equal to or less than the number of cores on your machine.
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
@@ -93,7 +103,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 	```python3 FilterSpliceJunctions.py --sample SAMPLE_NAME MIN_READ_COUNT```
 	
-	It should be noted that 
+	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This problem is not present in the ```---all``` option however.
 
 	If you prefer to use awk and grep tools to filter splice sites and/or avoid writing your own database querries to perform more complex filters then use this to print out all junction information:
 
