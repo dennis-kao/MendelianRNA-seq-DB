@@ -7,7 +7,7 @@
 
 home='/home/dennis.kao/tools/MendelianRNA-seq-DB'
 
-if [ -z "$transcript_mode" ];
+if [ -z "$transcript_model" ];
 then
 		transcript_model=$home/gencode.comprehensive.splice.junctions.txt
 fi
