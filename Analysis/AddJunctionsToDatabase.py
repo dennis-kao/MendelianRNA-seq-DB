@@ -832,7 +832,7 @@ def deleteSample(sample):
 
 if __name__=="__main__":
 
-	print ('SpliceJunctionSummary.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
+	print ('AddJunctionsToDatabase.py started on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
 
 	parser = argparse.ArgumentParser(description = 'Summarize the read counts of the junctions reported by SpliceJunctionDiscovery.py')
 	parser.add_argument('-transcript_model',help="Transcript model of canonical splicing, e.g. gencode v19. Default is set to /home/dennis.kao/tools/MendelianRNA-seq-DB/gencode.comprehensive.splice.junctions.txt",action='store',default = "/home/dennis.kao/largeWork/gene-lists/all-protein-coding-genes-no-patches.list")
@@ -870,4 +870,4 @@ if __name__=="__main__":
 
 		deleteSample(sample)
 
-	print ('SpliceJunctionSummary.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
+	print ('AddJunctionsToDatabase.py finished on ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
