@@ -4,37 +4,34 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover junctions in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database in addition to the parallel processing step.
+MendelianRNA-seq-DB is a tool to discover junctions in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database.
 
-The main benefit of using a database as opposed to text files is that sample bam files only have to be processed once. Analyzing a new sample does not require the user to re-run the pipeline on controls - instead, the user only needs to query the database. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map) like the original scripts.
+The main benefit of using a database is that results from previously processed files can be reused. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map).
 
 ## Diagnosis methodology
 
-MendelianRNA-seq-DB was initially developed to help researchers discover splice junctions causitive for rare Mendelian diseases. The methodology is as follows:
+MendelianRNA-seq-DB was initially developed to help researchers discover splicing events causitive for neuromuscular diseases. The methodology is as follows:
 
 1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
 2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
-4. Priortize and analyze variants which pertain to regions in genes related to this disease or are consistent with the patient's phenotype
-5. Priortize and analyze variants whose intronic regions share only one splice site with that of a known healthy transcript model<sup>*</sup>
-
-<sup>*</sup>The most probable mutation event in an exon-intron-exon region is that which only alters one exon. This event is denoted as 'START' or 'STOP' in the database. 
+4. Priortize and analyze junctions which reside in genes related to this disease
 
 ## Pipeline details
 
-SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns in a list of regions of interest, summarizes determines their positions from the reported CIGAR string, counts the number of alignments, and writes this to a text file named after the gene region the junction resides in. For example PAITENT_X.bam will have a folder named PATIENT_X which will contain approximately 15000 - 22000 text files each with names like NPHS1.txt or DMD.txt. 
+SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns in a list of regions of interest, determines their chromosomal positions, counts the number of alignments to each position, and writes this to a text file (e.x. PATIENT_X/DMD.txt).
 
-AddJunctionsToDatabase.py reads each text file, performs gencode annotations and normalization, and stores the information into a database. 
+AddJunctionsToDatabase.py reads each text file, compares the reported junctions to that of a transcript_model, annotates any shared splice site positions, normalizes annotated reads, and stores this information into a database. 
 
-FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in hopes of finding an aberrant splicing event causative for disease.
+FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in the database in hopes of finding an aberrant splicing event causative for disease.
 
-SpliceJunctionDiscovery.py usually takes the longest to execute because it calls upon samtools based on the number of samples * the number of regions of interest. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. 
+SpliceJunctionDiscovery.py usually takes the longest to execute. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. 
 
 AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for sample sizes less than 100. Querrying the database using FilterSpliceJunctions is probably the fastest step taking seconds to execute.
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is a good resource for control BAMs. These BAM files should all be from the same tissue due to tissue specific expression. A way to test for contaminated tissue samples has been described in the study cited below. Note that you can generate .bai files from .bam files using this line: ```parallel  samtools index ::: *.bam```
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
@@ -54,10 +51,9 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 		G09321.GTEX.0EYJ-9E12.3.bam
 		PATIENT.bam
 	
-	
 	An easy way to generate this file would be to navigate to a directory containing the .bam files you want to use and running this line: ```ls *.bam | grep '' > bamlist.list```
 
-4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, one, both) and it's annotated normalization calculation. You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
+4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, start, stop, both, exon_skip). You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
 
 5. [Python 3.5.2](https://www.python.org/downloads/) or higher
 
@@ -72,9 +68,8 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 ## Steps
 
 1. Put bamlist.list, .bam files, .bai files in a new directory. Navigate to it. 
-	NOTE: there should not be any .txt files present beforehand in order for SpliceJunctionDiscovery.py to run correctly.
 
-2. For [Torque](http://www.adaptivecomputing.com/products/open-source/torque/) users there is a [PBS file](Analysis/rnaseq.novel_splice_junction_discovery.pbs) containing all the commands you need to run. Just change the "home" directory in the file to match where you placed the MendelianRNA-seq folder and run: 
+2. For [Torque](http://www.adaptivecomputing.com/products/open-source/torque/) users there is a [PBS file](Analysis/rnaseq.novel_splice_junction_discovery.pbs). Just change the "home" directory in the file to match where you placed the MendelianRNA-seq-DB folder and run: 
 
 	```qsub MendelianRNA-seq/Analysis/rnaseq.novel_splice_junction_discovery.pbs -v transcript_file=transcript_file,bam_list=bamlist.list,processes=10```
 	
@@ -85,7 +80,7 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	Parameters:
 	1. transcript_file, path to file #2
 	2. bam_list, path to file #3
-	3. processes, the number of worker processes running in the background calling samtools.This number should be equal to or less than the number of cores on your machine.
+	3. processes, the number of worker processes running in the background calling samtools. This number should be equal to or less than the number of cores on your machine.
 	
 		For torque users: This number should also be equal to or less than the number specified for ppn in rnaseq.novel_splice_junction_discovery.pbs:
 		
@@ -99,13 +94,13 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 
 	```python3 AddJunctionsToDatabase.py --addBAM -transcript_file=all-protein-coding-genes-no-patches.txt -processes=4 -bamlist=bamlist.list -flank=1```
 
-	-flank is a parameter which enables flanking for gencode annotation. If a gencode junction was 1:100-300 and a junction in a sample was 1:99-299, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of the gencode junction.
+	-flank is a parameter which specifies a flanking region for transcript_model annotation. If flank was set to 1, a gencode junction was 1:100-300 and a junction in a sample was 1:99-301, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of that of a transcript_model's junction.
 
 5. At this point your database (SpliceJunction.db) has been populated with junction information from your samples. Now you can use FilterSpliceJunction.py to output junction information.
 
 	To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
 
-	```python3 FilterSpliceJunctions.py --sample SAMPLE_NAME MIN_READ_COUNT```
+	```python3 FilterSpliceJunctions.py --sample [SAMPLE_NAME] [MIN_READ_COUNT]	[MIN_NORM_READ_COUNT]```
 	
 	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This problem is not present in the ```---all``` option however.
 
@@ -114,8 +109,6 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	```python3 FilterSpliceJunctions.py --all```
 
 ## Output
-
-SpliceJunctionDiscovery.py generates a folder for each bam. Within this folder are text files containing summarized read counts for junctions pertaining to a specific gene. You can delete these folders once all the information has been added to the database.
 
 By default the database is named SpliceJunction.db. There are 4 tables:
 
@@ -137,7 +130,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 
 - SpliceJunctionDiscovery has been rewritten in Python and parallelized - decreasing processing time by a factor proprotional to the number of worker processes
 - CIGAR string parsing is handled by a function called parseCIGARForIntrons() whereas before CIGAR strings were handled by piping through multiple bash tools. As a result of improper parsing using bash tools, junction start and/or stop positions were not reported properly (e.x. 1:100-200*1D30 represents an alignment that should really be 1:100-230 or 1:100-231)
-- Junction flanks have been implemented using database logic
+- Transcript_model annotation and flanking have been implemented using database logic
 - All information produced by SpliceJunctionDiscovery is stored in a database instead of text files. This allows the user to utilize previously computed results instead of having to run the entire pipeline again when a new sample needs to be analyzed.
 - The database has some new fields that can be used to filter junctions: 
 	```
@@ -147,7 +140,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 	total_patient_read_count
 	total_gtex_read_count
 	```
-- Junction annotation now discriminates between 'START' and 'STOP' instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions.
+- Transcript_model annotation now discriminates between 'START' and 'STOP' instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions.
 - Normalization of annotated junctions now considers read counts from all junctions that have at least one annotated splice site as the denominator whereas before only "BOTH" annotated junctions were used
 
 ## Citations
@@ -170,4 +163,4 @@ A +/- flanking region is considered when annotating the 5' and 3' positions of s
 ### Distributed file systems and pipeline performance
 In order to circumvent the issue of write locks each worker process in SpliceJunctionDiscovery is assigned a single gene and writes to a single text file. As a result, each sample folder contains around 15000 to 22000 gene text files if you were to run the pipeline against all protein coding genes. 
 
-Using a DFS does not affect the performance of SpliceJunctionDiscovery, however, it does affect AddJunctionsToDatabase significantly. Because the script opens, reads, and closes many small files using a DFS will result in a majority of runtime spent looking for these files on the server. In my experience, this increased runtime from 5 minutes (on a local SSD) to over 40 hours (on the server). Therefore, it is reccomended that you copy over or generate the files created by SpliceJunctionDiscovery to a local drive before running AddJunctionsToDatabase.
+Using a DFS does not affect the performance of SpliceJunctionDiscovery, however, it does affect AddJunctionsToDatabase significantly. Because the script opens, reads, and closes many small files, using a DFS will result in a majority of runtime spent looking for these files on the server. In my experience, this increased runtime from 5 minutes (on a local SSD) to over 40 hours (on the server). Therefore, it is reccomended that you copy over the files created by SpliceJunctionDiscovery to a local drive or simply generate them on a local drive before running AddJunctionsToDatabase.
