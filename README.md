@@ -15,7 +15,7 @@ MendelianRNA-seq-DB was initially developed to help researchers discover splicin
 1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
 2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
-4. Priortize and analyze junctions which reside in genes related to this disease
+4. Priortize and analyze remaining junctions which reside in genes related to this disease
 
 ## Pipeline details
 
