@@ -85,7 +85,7 @@ def writeToFile(res, file):
 		for row in res:
 			out.write('\t'.join(str(element) for element in row) + '\n')
 
-def sampleSpecificJunctions(cur, sample, min_read):
+def sampleSpecificJunctions(cur, sample, min_read, min_norm_read):
 
 	"""
 	Generates a file containing junctions which are seen in a sample and not seen in any
@@ -106,7 +106,8 @@ def sampleSpecificJunctions(cur, sample, min_read):
 	Args:
 		cur, a cursor to a connection to a database
 		sample, the name of the sample file you want to investigate, must include .bam extension
-		min_read, the minimum number of reads a junction must have 
+		min_read, the minimum number of reads a junction must have
+		min_norm_read, the minimum normalized read count a junction must have or NULL
 
 	Returns:
 	    None
@@ -117,76 +118,7 @@ def sampleSpecificJunctions(cur, sample, min_read):
 
 	count = str(countGTEX(cur))
 
-	output = '_'.join([sample, 'specific', 'rc' + str(min_read), 'n_gtex_' + count])
-
-	cur.execute('''select group_concat(gene_ref.gene),
-		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
-		case 
-			when junction_ref.gencode_annotation = 0 then 'NONE'
-			when junction_ref.gencode_annotation = 1 then 'START'
-			when junction_ref.gencode_annotation = 2 then 'STOP'
-			when junction_ref.gencode_annotation = 3 then 'BOTH'
-			when junction_ref.gencode_annotation = 4 then 'EXON_SKIP'
-		END as annotation, 
-		junction_ref.n_gtex_seen, 
-		junction_ref.n_patients_seen,
-		junction_ref.total_patient_read_count,
-		junction_ref.total_gtex_read_count,
-		junction_ref.total_read_count,
-		group_concat(distinct junction_counts.read_count||':'||sample_ref.sample_name),
-		group_concat(distinct junction_counts.norm_read_count||':'||sample_ref.sample_name)
-		from 
-		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
-		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
-		inner join gene_ref on junction_ref.rowid = gene_ref.junction_id 
-		where
-		sample_ref.sample_name = ? and
-		junction_counts.read_count >= ? and
-		junction_ref.n_gtex_seen <= ?
-		group by 
-		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''',
-		(sample, min_read, 0))
-
-	writeToFile(cur.fetchall(), output)
-
-def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_total_gtex_reads):
-
-	"""
-	Generates a text file using a query in which you can discover junctions specific to a sample
-	with parameters for appearances in GTEx samples
-
-	The query provides information about read counts of only the one specified sample
-	in the columns 'sample:read_count' and 'sample:norm_read_count', 
-
-		Ex. 1:100-200 PATIENT2:344
-
-	This occurs because we are joining on only one sample in the database as opposed
-	to all.
-
-	Args:
-		cur, a cursor to a connection to a database
-		sample, the name of the sample file you want to investigate, must include .bam extension
-		min_read, the minimum number of reads a junction must have 
-		max_n_gtex_seen, the maximum number of gtex samples a junction can appear in
-		max_total_gtex_reads, the maximum total read count for a junction in GTEx samples
-
-	Returns:
-	    None
-
-	Raises:
-	    None
-	"""
-
-	if not max_n_gtex_seen:
-		max_n_gtex_seen = 0
-
-	if not max_total_gtex_reads:
-		max_total_gtex_reads = 0
-
-	if not min_read:
-		min_read = 0
-
-	output = '_'.join([str(sample), ('rc' + str(min_read)), ('maxGTEX' + str(max_n_gtex_seen)), ('maxGTEXrc' + str(max_total_gtex_reads))])
+	output = '_'.join([sample, 'specific', 'rc' + str(min_read), ('norm_rc' + str(min_norm_read)), 'n_gtex_' + count])
 
 	cur.execute('''select group_concat(gene_ref.gene),
 		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
@@ -212,7 +144,79 @@ def customSampleSpecificJunctions(cur, sample, min_read, max_n_gtex_seen, max_to
 		sample_ref.sample_name = ? and
 		junction_counts.read_count >= ? and
 		junction_ref.n_gtex_seen <= ? and
-		junction_ref.total_gtex_read_count <= ?
+		(junction_counts.norm_read_count >= ? or junction_counts.norm_read_count is NULL)
+		group by 
+		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''',
+		(sample, min_read, 0, min_norm_read))
+
+	writeToFile(cur.fetchall(), output)
+
+def customSampleSpecificJunctions(cur, sample, min_read, min_norm_read, max_n_gtex_seen, max_total_gtex_reads):
+
+	"""
+	Generates a text file using a query in which you can discover junctions specific to a sample
+	with parameters for appearances in GTEx samples
+
+	The query provides information about read counts of only the one specified sample
+	in the columns 'sample:read_count' and 'sample:norm_read_count', 
+
+		Ex. 1:100-200 PATIENT2:344
+
+	This occurs because we are joining on only one sample in the database as opposed
+	to all.
+
+	Args:
+		cur, a cursor to a connection to a database
+		sample, the name of the sample file you want to investigate, must include .bam extension
+		min_read, the minimum number of reads a junction must have
+		min_norm_read, the minimum normalized read count a junction must have or NULL
+		max_n_gtex_seen, the maximum number of gtex samples a junction can appear in
+		max_total_gtex_reads, the maximum total read count for a junction in GTEx samples
+
+	Returns:
+	    None
+
+	Raises:
+	    None
+	"""
+
+	if not max_n_gtex_seen:
+		max_n_gtex_seen = 0
+
+	if not max_total_gtex_reads:
+		max_total_gtex_reads = 0
+
+	if not min_read:
+		min_read = 0
+
+	output = '_'.join([str(sample), ('rc' + str(min_read)), ('norm_rc' + str(min_norm_read)), ('maxGTEX' + str(max_n_gtex_seen)), ('maxGTEXrc' + str(max_total_gtex_reads))])
+
+	cur.execute('''select group_concat(gene_ref.gene),
+		(junction_ref.chromosome||':'||junction_ref.start||'-'||junction_ref.stop),
+		case 
+			when junction_ref.gencode_annotation = 0 then 'NONE'
+			when junction_ref.gencode_annotation = 1 then 'START'
+			when junction_ref.gencode_annotation = 2 then 'STOP'
+			when junction_ref.gencode_annotation = 3 then 'BOTH'
+			when junction_ref.gencode_annotation = 4 then 'EXON_SKIP'
+		END as annotation, 
+		junction_ref.n_gtex_seen, 
+		junction_ref.n_patients_seen,
+		junction_ref.total_patient_read_count,
+		junction_ref.total_gtex_read_count,
+		junction_ref.total_read_count,
+		group_concat(distinct junction_counts.read_count||':'||sample_ref.sample_name),
+		group_concat(distinct junction_counts.norm_read_count||':'||sample_ref.sample_name)
+		from 
+		sample_ref inner join junction_counts on sample_ref.ROWID = junction_counts.bam_id 
+		inner join junction_ref on junction_counts.junction_id = junction_ref.rowid 
+		inner join gene_ref on junction_ref.rowid = gene_ref.junction_id 
+		where
+		sample_ref.sample_name = ? and
+		junction_counts.read_count >= ? and
+		junction_ref.n_gtex_seen <= ? and
+		junction_ref.total_gtex_read_count <= ? and
+		(junction_counts.norm_read_count >= ? or junction_counts.norm_read_count is NULL)
 		group by 
 		junction_ref.chromosome, junction_ref.start, junction_ref.stop;''',
 		(sample, min_read, max_n_gtex_seen, max_total_gtex_reads))
@@ -307,16 +311,17 @@ if __name__=="__main__":
 	if sys.argv[1] == '--printsamples':
 		printSamplesInDB(cur)
 	elif sys.argv[1] == '--sample':
-		sampleSpecificJunctions(cur, sys.argv[2], int(sys.argv[3]))
+		print(sys.argv[4])
+		sampleSpecificJunctions(cur, sys.argv[2], int(sys.argv[3]), float(sys.argv[4]))
 	elif sys.argv[1] == '--custom':
-		customSampleSpecificJunctions(cur, sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+		customSampleSpecificJunctions(cur, sys.argv[2], float(sys.argv[3]), sys.argv[4], sys.argv[5], sys.argv[6])
 	elif sys.argv[1] == '--all':
 		printAllJunctions(cur)
 	else:
 		print('Invalid option. Use one of the following:')
 		print('--printsamples')
-		print('--sample	[SAMPLE]	[MIN_READ]')
-		print('--custom [SAMPLE] [MIN_READ] [MAX_N_GTEX_SEEN] [MAX_TOTAL_GTEX_READS]')
+		print('--sample	[SAMPLE]	[MIN_READ]	[MIN_NORM_READ]')
+		print('--custom [SAMPLE] [MIN_READ] [MIN_NORM_READ]	[MAX_N_GTEX_SEEN] [MAX_TOTAL_GTEX_READS]')
 		print('--all')
 
 	commitAndClose(conn)

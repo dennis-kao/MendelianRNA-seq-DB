@@ -418,16 +418,21 @@ def get_annotated_counts(spliceDict):
 def summarizeGeneFile(poolArguement):
 
 	"""
-	Creates a dictionary containing maximum read counts for splice sites in a gene
-	This function distinguishes between different ends of a junction to be consistent
-	when normalizing.
+	The function each worker process must go through.
+
+	Each process is assigned a gene, and finds the corresponding gene text file in each
+	sample folder. The worker process performs transcript_model annotation, normalization, 
+	and finally adds the junction information to the database.
 
 	Args:
-		spliceDict, a dictionary containing junctions and their read counts
+		poolArgument, is composed of:
+
+			bamList, a list of bams to be used to access each sample's folder
+			gene, the gene text file in which each worker process should read from each sample
+			flank, the flanking region for each transcript_model junction
 
 	Returns:
-	    count_dict, a dictionary containing maximum read counts for start and stop positions
-	    of junctions in spliceDict
+	    None
 
 	Raises:
 	    None
@@ -759,7 +764,7 @@ def storeTranscriptModelJunctions(gencode_file):
 	print ('Started adding transcript_model junctions @ ' + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.%f"))
 
 	with open(gencode_file, "r") as gf:
-		for commitFreq, line in enumerate(gf):
+		for line in gf:
 
 			chrom, start, stop, gene = line.strip().split()[0:4]
 
@@ -767,9 +772,6 @@ def storeTranscriptModelJunctions(gencode_file):
 			stop = int(stop)
 
 			addTranscriptModelJunction(chrom, start, stop, cur)
-
-			if commitFreq % 500 == 0: #	yes this works
-				conn.commit()
 
 	commitAndClose(conn)
 
