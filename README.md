@@ -4,18 +4,34 @@
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
-MendelianRNA-seq-DB is a tool to discover junctions in a collection of BAM files. It is a rewrite of the scripts found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database.
+MendelianRNA-seq-DB was developed to help researchers discover abnormal transcripts causitive for neuromuscular disease.
+It is a tool which analyzes junction positions in a collection of BAM files. The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database.
 
-The main benefit of using a database is that results from previously processed files can be reused. In addition, ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map).
+The main benefit of a database is that results from previously processed files can be reused. This confers a few benefits:
+
+1. Processing a new sample only requires that you process that one sample and not that sample with multiple control BAM files
+2. Having pre-computed results means you can compare junctions to that of many controls, possibly up to the thousands
+3. Ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map)
 
 ## Diagnosis methodology
-
-MendelianRNA-seq-DB was initially developed to help researchers discover splicing events causitive for neuromuscular diseases. The methodology is as follows:
 
 1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
 2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
 4. Priortize and analyze remaining junctions which reside in genes related to this disease
+
+## The number of controls VS the number of sample specific junctions
+
+It follows that with a higher number of controls you are able to filter out more non-pathogenic and noise junctions. This is clearly seen in a graph created by Beryl Cummings:
+
+![alt text](https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png)
+
+Ideally, you want to use as many controls as you can. If you cannot, then you can rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
+
+1. Don't analyze junctions annotated with 'BOTH'
+2. Construct a gene panel, from experts or from scientific literature, and only analyze junctions pertaining to those regions
+3. Set a higher threshold for read counts. This can be specified as a parameter when running FilterSpliceJunctions.py
+4. Don't analyze junctions annotated with 'NONE'
 
 ## Pipeline details
 
@@ -101,6 +117,11 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
 
 	```python3 FilterSpliceJunctions.py --sample [SAMPLE_NAME] [MIN_READ_COUNT]	[MIN_NORM_READ_COUNT]```
+	
+	I typically use the following values:
+	
+	[MIN_READ_COUNT] = 5
+	[MIN_NORM_READ_COUNT] = 0.05
 	
 	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This problem is not present in the ```---all``` option however.
 
