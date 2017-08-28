@@ -16,7 +16,7 @@ The scripts are a rewrite of those found in the /Analysis folder of [MendelianRN
 ## Methodology to discovering a pathogenic splicing event
 
 1. Generate 2 sets of splice junction positions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
-2. Remove any shared splice junction positions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
+2. Remove any shared splice junction positions from the "disease" set since splicing events causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
 4. Priortize and analyze remaining junctions which reside in genes related to this disease
 
