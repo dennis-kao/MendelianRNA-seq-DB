@@ -1,37 +1,37 @@
-﻿# MendelianRNA-seq-DB
+# MendelianRNA-seq-DB
 
 ![alt text](./SpliceJunctionSchema.png)
 
 #### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
 MendelianRNA-seq-DB was developed to help researchers discover abnormal transcripts causitive for neuromuscular disease.
-It is a tool which analyzes junction positions in a collection of BAM files. The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database.
+It is a tool which analyzes junction positions in a collection of BAM files. 
 
-The main benefit of a database is that results from previously processed files can be reused. This confers a few benefits:
+The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database. The use of a junction position database confers a few benefits:
 
-1. Processing a new sample only requires that you process that one sample and not that sample with multiple control BAM files
-2. Having pre-computed results means you can compare junctions to that of many controls, possibly up to the thousands
-3. Ram use stays relatively low because the results are stored on the disk and not in a Python dictionary (hash map)
+1. BAM files only have to be processed once through SpliceJunctionDiscovery, and results from previous computations can be reused
+2. The ability to utilize a very high number of controls, possibly up to the thousands
+3. Lowered RAM use since junction positions are being stored on disk
 
-## Diagnosis methodology
+## Methodology to discovering a pathogenic splicing event
 
-1. Generate 2 sets of splice junctions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
-2. Remove any shared splice junctions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
+1. Generate 2 sets of splice junction positions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
+2. Remove any shared splice junction positions from the "disease" set since variants causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
 4. Priortize and analyze remaining junctions which reside in genes related to this disease
 
-## The number of controls VS the number of sample specific junctions
+## The number of controls
 
-It follows that with a higher number of controls you are able to filter out more non-pathogenic and noise junctions. This is clearly seen in a graph created by Beryl Cummings:
+It follows that with a higher number of control BAM files you are able to filter out more non-pathogenic and noise junctions leading to a smaller number of candidate splicing events. This is clearly seen in a graph created by Beryl Cummings:
 
-![alt text](https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png)
+<img src="https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png" width="400" height="600" />
 
-Ideally, you want to use as many controls as you can. If you cannot, then you can rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
+Ideally, you want to use as many controls as you can. In practicality, you may want to rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
 
 1. Don't analyze junctions annotated with 'BOTH'
 2. Construct a gene panel, from experts or from scientific literature, and only analyze junctions pertaining to those regions
 3. Set a higher threshold for read counts. This can be specified as a parameter when running FilterSpliceJunctions.py
-4. Don't analyze junctions annotated with 'NONE'
+4. If you believe you have a high enough coverage across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This removes all possibility of discovering splicing events which start and end in a known exonic regions however.
 
 ## Pipeline details
 
@@ -147,7 +147,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 	MT-ATP6	MT:9234-9511	NONE	0	1	6	0	6	PATIENT.bam:6	PATIENT.bam:NULL
 	AC002321.2	GL000201.1:9511-14322	START	1	1	70	2	72	PATIENT.bam:70	PATIENT.bam:NULL
 
-## Differences between MendelianRNA-seq-DB and Beryl Cumming's original MendelianRNA-seq
+## Differences between Beryl Cumming's original MendelianRNA-seq
 
 - SpliceJunctionDiscovery has been rewritten in Python and parallelized - decreasing processing time by a factor proprotional to the number of worker processes
 - CIGAR string parsing is handled by a function called parseCIGARForIntrons() whereas before CIGAR strings were handled by piping through multiple bash tools. As a result of improper parsing using bash tools, junction start and/or stop positions were not reported properly (e.x. 1:100-200*1D30 represents an alignment that should really be 1:100-230 or 1:100-231)
