@@ -24,7 +24,7 @@ The scripts are a rewrite of those found in the /Analysis folder of [MendelianRN
 
 It follows that with a higher number of control BAM files you are able to filter out more non-pathogenic and noise junctions leading to a smaller number of candidate splicing events. This is clearly seen in a graph created by Beryl Cummings:
 
-<img src="https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png" width="400" height="600" />
+<img src="https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png" width="400" height="600" align="middle"/>
 
 Ideally, you want to use as many controls as you can. In practicality, you may want to rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
 
@@ -119,11 +119,12 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	```python3 FilterSpliceJunctions.py --sample [SAMPLE_NAME] [MIN_READ_COUNT]	[MIN_NORM_READ_COUNT]```
 	
 	I typically use the following values:
-	
+	```
 	[MIN_READ_COUNT] = 5
 	[MIN_NORM_READ_COUNT] = 0.05
+	```
 	
-	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This problem is not present in the ```---all``` option however.
+	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This is not the case with the ```---all``` option however.
 
 	If you prefer to use awk and grep tools to filter splice sites and/or avoid writing your own database querries to perform more complex filters then use this to print out all junction information:
 
