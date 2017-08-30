@@ -47,7 +47,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute. This step is pa
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. The [GTeX project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. The [GTEx project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
@@ -112,9 +112,10 @@ SpliceJunctionDiscovery.py usually takes the longest to execute. This step is pa
 
 	-flank is a parameter which specifies a flanking region for transcript_model annotation. If flank was set to 1, a gencode junction was 1:100-300 and a junction in a sample was 1:99-301, the sample junction would be considered BOTH annotated. This is because both the start and stop positions fall within a +/- 1 range of that of a transcript_model's junction.
 
-5. At this point your database (SpliceJunction.db) has been populated with junction information from your samples. Now you can use FilterSpliceJunction.py to output junction information.
+5. Now you can use FilterSpliceJunction.py to output junction information.
 
 	To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
+	
 	```python3 FilterSpliceJunctions.py --sample [SAMPLE_NAME] [MIN_READ_COUNT]	[MIN_NORM_READ_COUNT]```
 	
 	I typically use the following values:
@@ -126,6 +127,7 @@ SpliceJunctionDiscovery.py usually takes the longest to execute. This step is pa
 	Note: Because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This is not the case with the ```---all``` option however.
 
 	To print out splice sites across all samples in the database, use:
+	
 	```python3 FilterSpliceJunctions.py --all```
 	
 	You may want to use awk and grep tools on the ```--all``` text file to perform more complex filters and to avoid writing your own database queries.
@@ -156,7 +158,7 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 - SpliceJunctionDiscovery has been rewritten in Python and parallelized - decreasing processing time by a factor proprotional to the number of worker processes
 - CIGAR string parsing is handled by a function called parseCIGARForIntrons() whereas before CIGAR strings were handled by piping through multiple bash tools. As a result of improper parsing using bash tools, junction start and/or stop positions were not reported properly (e.x. 1:100-200*1D30 represents an alignment that should really be 1:100-230 or 1:100-231)
 - Transcript_model annotation and flanking have been implemented using database logic
-- All information produced by SpliceJunctionDiscovery is stored in a database instead of text files. This allows the user to utilize previously computed results instead of having to run the entire pipeline again when a new sample needs to be analyzed.
+- All information produced by SpliceJunctionDiscovery is stored in a database instead of text files
 - The database has some new fields that can be used to filter junctions: 
 	```
 	n_patients_seen
@@ -166,19 +168,25 @@ Using one of the options of FilterSpliceJunctions.py will produce a text file co
 	total_gtex_read_count
 	```
 ### Logic differences
-- Transcript_model annotation now discriminates between 'START' and 'STOP' instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions.
+- Transcript_model annotation now discriminates between 'START' and 'STOP' instead of 'ONE'. In addition, there is a new annotation, called 'EXON_SKIP' which denotes the event of exon skipping. This is done by checking to see if the reported 3' and 5' positions from a sample's junction belong to different transcript_model junctions
 - Normalization of annotated junctions now considers read counts from all junctions that have at least one annotated splice site as the denominator whereas before only "BOTH" annotated junctions were used
 
 ## Citations
 
 [Improving genetic diagnosis in Mendelian disease with transcriptome sequencing](http://stm.sciencemag.org/content/9/386/eaal5209)
 
-Beryl Cumming's original scripts: [MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
+[RNAseq analysis for the diagnosis of muscular dystrophy](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4704476/)
+
+[The original scripts: MendelianRNA-seq](https://github.com/berylc/MendelianRNA-seq)
+
+[The GTEx project](https://www.gtexportal.org/home/)
+
+[Blog post on how to interpret reported junction positions](https://macarthurlab.org/2017/05/31/improving-genetic-diagnosis-in-mendelian-disease-with-transcriptome-sequencing-a-walk-through/)
 
 ## Footnotes
 
 ### A junction in multiple gene regions
-A single gene region can encompass partial or whole regions of other genes. Thus, the same junction can appear in 2 different gene text files in a sample folder generated by SpliceJunctionDiscovery. Whether a junction belongs to two or more genes is not always factually correct. However, for the sake of inclusion and for the fact that this rarely happens, this edge case has been accounted for in AddJunctionsToDatabase.py in two ways: 
+A single gene region as defined in the format (CHROMOSOME:START-STOP) can encompass partial or whole regions of other genes. Thus, the same junction can appear in 2 different gene text files in a sample folder generated by SpliceJunctionDiscovery. Whether a junction belongs to two or more genes is not always factually correct. However, for the sake of inclusion and for the fact that this rarely happens, this edge case has been accounted for in AddJunctionsToDatabase.py in two ways: 
 
 	1. The mapping of a single junction to multiple genes has been done with the table GENE_REF
 	2. If the script encounters the same junction in a sample more than once, it will utilize the result with the highest read count for read count and normalized read count and will discard the other.
