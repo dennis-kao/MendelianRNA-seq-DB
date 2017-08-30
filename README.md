@@ -24,14 +24,16 @@ The scripts are a rewrite of those found in the /Analysis folder of [MendelianRN
 
 It follows that with a higher number of control BAM files you are able to filter out more non-pathogenic and noise junctions leading to a smaller number of candidate splicing events. This is clearly seen in a graph created by Beryl Cummings:
 
-<img src="https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png" width="400" height="600" align="middle"/>
+<p align="center">
+<img src="https://macarthurlab.files.wordpress.com/2017/05/nmd-controls.png" width="500" height="600" align="middle"/>
+</p>
 
 Ideally, you want to use as many controls as you can. In practicality, you may want to rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
 
 1. Don't analyze junctions annotated with 'BOTH'
 2. Construct a gene panel, from experts or from scientific literature, and only analyze junctions pertaining to those regions
 3. Set a higher threshold for read counts. This can be specified as a parameter when running FilterSpliceJunctions.py
-4. If you believe you have a high enough coverage across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This removes all possibility of discovering splicing events which start and end in a known exonic regions however.
+4. If you believe you have a high enough coverage across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This is the most "dangerous" trick. It removes all possibility of discovering splicing events which start and end in a known exonic regions and a few other edge cases.
 
 ## Pipeline details
 
@@ -41,13 +43,11 @@ AddJunctionsToDatabase.py reads each text file, compares the reported junctions 
 
 FilterSpliceJunctions.py contains some pre-defined queries which can be used to filter junctions in the database in hopes of finding an aberrant splicing event causative for disease.
 
-SpliceJunctionDiscovery.py usually takes the longest to execute. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. 
-
-AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for sample sizes less than 100. Querrying the database using FilterSpliceJunctions is probably the fastest step taking seconds to execute.
+SpliceJunctionDiscovery.py usually takes the longest to execute. This step is parallelized and the number of worker processes can specified in the torque file or as an arguement to the script. AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for sample sizes less than 100. Querrying the database using FilterSpliceJunctions is probably the fastest step taking seconds to execute.
 
 ## Required files
 
-1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. You need a sufficient number of high quality control BAMs so that you can filter out more splice junctions and discover those that are specific to a diseased sample. The [GTEx project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
+1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. The [GTeX project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
 
 2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
 	```
@@ -60,16 +60,16 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	There is an included file which contains [all protein coding regions](all-protein-coding-genes-no-patches.list).
 	
 3. bamlist.list - A file containing the names of all the bams you want to discover junctions in. The file should quite simply be:
-	
-	
-		G65693.GTEX.8TY6-5R5T.2.bam
-		G55612.GTEX.7G54-3GS8.1.bam
-		G09321.GTEX.0EYJ-9E12.3.bam
-		PATIENT.bam
+	```
+	G65693.GTEX.8TY6-5R5T.2.bam
+	G55612.GTEX.7G54-3GS8.1.bam
+	G09321.GTEX.0EYJ-9E12.3.bam
+	PATIENT.bam
+	```
 	
 	An easy way to generate this file would be to navigate to a directory containing the .bam files you want to use and running this line: ```ls *.bam | grep '' > bamlist.list```
 
-4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (none, start, stop, both, exon_skip). You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
+4. transcript_model - A text file containing a list of known canonical splice junctions. These will be used to evaluate a junction's annotation (NONE, START, STOP, BOTH, EXON_SKIP). You can use your own, or use the [included file](gencode.comprehensive.splice.junctions.txt). This file contains junctions from gencode v19.
 
 5. [Python 3.5.2](https://www.python.org/downloads/) or higher
 
@@ -115,7 +115,6 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 5. At this point your database (SpliceJunction.db) has been populated with junction information from your samples. Now you can use FilterSpliceJunction.py to output junction information.
 
 	To print out splice sites only seen in a "disease" sample and not in any GTEx sample use:
-
 	```python3 FilterSpliceJunctions.py --sample [SAMPLE_NAME] [MIN_READ_COUNT]	[MIN_NORM_READ_COUNT]```
 	
 	I typically use the following values:
@@ -124,11 +123,14 @@ AddJunctionsToDatabase.py is much faster and likely takes minutes to an hour for
 	[MIN_NORM_READ_COUNT] = 0.05
 	```
 	
-	It should be noted that because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This is not the case with the ```---all``` option however.
+	Note: Because the query in the ```--sample``` option joins information from a single sample's name, columns ```sample:read_count``` and ```sample:norm_read_count``` will not show read counts from other samples. This is not the case with the ```---all``` option however.
 
-	If you prefer to use awk and grep tools to filter splice sites and/or avoid writing your own database querries to perform more complex filters then use this to print out all junction information:
-
+	To print out splice sites across all samples in the database, use:
 	```python3 FilterSpliceJunctions.py --all```
+	
+	You may want to use awk and grep tools on the ```--all``` text file to perform more complex filters and to avoid writing your own database queries.
+
+	Further documentation on how to interpret these results can be found in a [blog post](https://macarthurlab.org/2017/05/31/improving-genetic-diagnosis-in-mendelian-disease-with-transcriptome-sequencing-a-walk-through/) written by Beryl Cummings.
 
 ## Output
 
