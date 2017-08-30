@@ -49,13 +49,13 @@ SpliceJunctionDiscovery.py usually takes the longest to execute. This step is pa
 
 1. .bam (and .bai) files produced from an RNA-seq pipeline - All control or "healthy" .bams need to have the phrase 'GTEX' in their file name for read count logic to work properly. The [GTEx project](https://www.gtexportal.org/home/) is what I used for control BAMs. All BAM files in the database should be from the same tissue due to tissue specific expression.
 
-2. transcript_file - A text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in:
+2. transcript_file - A tab-delimited text file containing a list of genes and their spanning chromosome positions that you want to discover junctions in. The format of the file is:
 	```
 	GENE	ENSG	STRAND	CHROM	START	STOP	GENE_TYPE
 	```
 	You can use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) for that, or convert an existing .bed file using this bash line:
 	```
-	cat kidney.glomerular.genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> gene.list
+	cat all-protein-coding-genes.bed | awk '{print $4"\t"$4"\t+\t"$1"\t"$2"\t"$3"\tNEXONS"}' >> all-protein-coding-genes.list
 	```
 	There is an included file which contains [all protein coding regions](all-protein-coding-genes-no-patches.list).
 	
