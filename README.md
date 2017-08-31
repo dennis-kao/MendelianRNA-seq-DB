@@ -30,7 +30,7 @@ It follows that with a higher number of control BAM files you are able to filter
 
 Ideally, you want to use as many controls as you can. In practicality, you may want to rely on a few tricks to reduce your dataset to a size where you can actually analyze each sample specific site on IGV:
 
-1. Don't analyze junctions annotated with 'BOTH'
+1. Don't analyze junctions annotated with 'BOTH'. This is the "safest" trick and one that you should probably always use. 'BOTH' annotated junctions are junctions which are seen in your transcript_model files (gencode v19).
 2. Construct a gene panel, from experts or from scientific literature, and only analyze junctions pertaining to those regions
 3. Set a higher threshold for read counts. This can be specified as a parameter when running FilterSpliceJunctions.py
 4. If you believe you have a high enough coverage across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This is the most "dangerous" trick. It removes all possibility of discovering splicing events which start and end in a known exonic regions and a few other edge cases.
