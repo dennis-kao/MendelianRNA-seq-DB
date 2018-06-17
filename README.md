@@ -7,7 +7,7 @@
 MendelianRNA-seq-DB was developed to help researchers discover abnormal transcripts causitive for neuromuscular disease.
 It is a tool which analyzes junction positions in a collection of BAM files. 
 
-The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support parallel processing and storing junction information in a database. The use of a junction position database confers a few benefits:
+The scripts are a rewrite of those used in the study: [Improving genetic diagnosis in Mendelian disease with transcriptome sequencing](http://stm.sciencemag.org/content/9/386/eaal5209) by Cummings et. al. (2017) to support parallel processing and storing junction information in a database. The use of parallel processing can lower runtime by a factor of 6 when using a Sandy Bridge 10 core Intel machine. The use of a junction position database confers a few benefits:
 
 1. BAM files only have to be processed once through SpliceJunctionDiscovery, and results from previous computations can be reused
 2. The ability to utilize a very high number of controls, possibly up to the thousands
