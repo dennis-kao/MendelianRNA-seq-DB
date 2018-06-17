@@ -2,12 +2,12 @@
 
 ![alt text](./SpliceJunctionSchema.png)
 
-#### Modification of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
+#### Rewrite of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
 MendelianRNA-seq-DB was developed to help researchers discover abnormal transcripts causitive for neuromuscular disease.
 It is a tool which analyzes junction positions in a collection of BAM files. 
 
-The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support storing junction information in a database. The use of a junction position database confers a few benefits:
+The scripts are a rewrite of those found in the /Analysis folder of [MendelianRNA-seq](https://github.com/dennis-kao/MendelianRNA-seq) to support parallel processing and storing junction information in a database. The use of a junction position database confers a few benefits:
 
 1. BAM files only have to be processed once through SpliceJunctionDiscovery, and results from previous computations can be reused
 2. The ability to utilize a very high number of controls, possibly up to the thousands
@@ -16,9 +16,11 @@ The scripts are a rewrite of those found in the /Analysis folder of [MendelianRN
 ## Methodology to discovering a pathogenic splicing event
 
 1. Generate 2 sets of splice junction positions from a collection of .bam files. One set is considered to be "healthy" and the other is considered to be "disease"
-2. Remove any shared splice junction positions from the "disease" set since splicing events causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with rare diseases)
+2. Remove any shared splice junction positions from the "disease" set since splicing events causitive for disease are likely not present in a "healthy" population (keep in mind we are dealing with muscular dystrophy - a rare disease)
 3. Remove splice sites from the "disease" set which have a low number of read counts and/or normalized read counts and thus can considered as noise
 4. Priortize and analyze remaining junctions which reside in genes related to this disease
+
+In my experience, it is possible to narrow down the number of candidate splice sites from ~240 000 to 30 or less per sample using these scripts.
 
 ## The number of controls
 
@@ -33,9 +35,9 @@ Ideally, you want to use as many controls as you can. In practice, you may want 
 1. Don't analyze junctions annotated with 'BOTH'. This is the "safest" trick and one that you should probably always use. 'BOTH' annotated junctions are junctions which are seen in your transcript_model files (gencode v19).
 2. Construct a gene panel, from experts or from scientific literature, and only analyze junctions pertaining to those regions
 3. Set a higher threshold for read counts. This can be specified as a parameter when running FilterSpliceJunctions.py
-4. If you believe you have a high enough coverage across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This is the most "dangerous" trick. It removes all possibility of discovering splicing events which start and end in a known exonic regions and a few other edge cases.
+4. If you believe you have a high enough read depth across regions of interest in the transcriptome don't analyze junctions annotated with 'NONE'. This is the most "dangerous" trick. It removes all possibility of discovering splicing events which start and end in a known exonic regions and a few other edge cases.
 
-## Script details
+## Script/implementation details
 
 SpliceJunctionDiscovery.py calls upon samtools to report the presence of introns in a list of regions of interest, determines their chromosomal positions, counts the number of alignments to each position, and writes this to a text file (e.x. PATIENT_X/DMD.txt).
 
