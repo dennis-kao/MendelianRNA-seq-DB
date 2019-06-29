@@ -2,6 +2,8 @@
 
 ![alt text](./SpliceJunctionSchema.png)
 
+[Research paper: Expanding the Boundaries of RNA Sequencing as a Diagnostic Tool for Rare Mendelian Disease](https://www.sciencedirect.com/science/article/pii/S0002929719300126)
+
 #### Rewrite of Beryl Cummings scripts for discovering novel splicing events through RNA-seq
 
 MendelianRNA-seq-DB was developed to help researchers discover abnormal transcripts causitive for neuromuscular disease.
